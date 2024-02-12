@@ -1,9 +1,11 @@
+import sys
 import math
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import deque
 
-from env import *
+from env import EnvCrossroads
+from vehicle import Vehicle
 
 class Node:
      def __init__(self, x = 0, y = 0, yaw = 0, v = 0, action = None, p = None):
@@ -14,7 +16,7 @@ class Node:
          self.action = action
          self.reward = 0
          self.parent = p
-         
+
 
 class KLevelPlanner:
 
@@ -24,6 +26,7 @@ class KLevelPlanner:
                    [2.5, 0],            # accelerate
                    [-2.5, 0],           # decelerate
                    [-5, 0]]             # brake
+
 
     def __init__(self, level = 0, steps = 6, dt = 0.5, lamda = 0.9):
         self.level = level
@@ -75,25 +78,25 @@ class KLevelPlanner:
 
         return x, y, yaw, v
 
+
 def run():
     env = EnvCrossroads(size=25, lanewidth=4)
     vehicle_0 = Vehicle(2, -16, np.pi / 2, 5, 2, 'blue')
     vehicle_1 = Vehicle(-2, 16, -np.pi / 2, 5, 2, 'red')
-    
+
     planner = KLevelPlanner()
 
     while True:
+        if np.hypot(15 - vehicle_1.x, -2 - vehicle_1.y) < 1:
+            break
+
+        acc, omega = planner.planning(vehicle_1, [15, -2])
+        vehicle_1.update(acc, omega, 0.5)
+
         plt.cla()
         env.draw_env()
         vehicle_0.draw_vehicle()
         vehicle_1.draw_vehicle()
-
-        if np.hypot(15 - vehicle_1.x, -2 - vehicle_1.y) < 1:
-            break
-
-        acc, omega = planner.planning(vehicle_1, [15,-2])
-        vehicle_1.update(acc, omega, 0.5)
-
         plt.xlim(-25, 25)
         plt.ylim(-25, 25)
         plt.gca().set_aspect('equal')
@@ -102,6 +105,7 @@ def run():
     plt.ylim(-25, 25)
     plt.gca().set_aspect('equal')
     plt.show()
+
 
 if __name__ == "__main__":
     run()
