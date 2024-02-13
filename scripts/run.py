@@ -72,6 +72,8 @@ class KLevelPlanner:
                             offroad = -1
                             break
                     direction = 0
+                    if self.is_opposite_direction(x, y, yaw, ego_box2d):
+                        direction = -1
                     distance = -(abs(x - ego.target[0]) + abs(y - ego.target[1]))
 
                     cur_reward = self.weight_avoid * avoid +  self.weight_safe * safe + \
@@ -102,6 +104,11 @@ class KLevelPlanner:
         v = node.v + acc * self.dt
         yaw = node.yaw + omega * self.dt
 
+        while yaw > 2 * np.pi:
+            yaw -= 2 * np.pi
+        while yaw < 0:
+            yaw += 2 * np.pi
+
         return x, y, yaw, v
 
 
@@ -113,6 +120,34 @@ class KLevelPlanner:
             pass
         elif ego.level == 2:
             pass
+
+
+    def is_opposite_direction(self, x, y, yaw, ego_box2d):
+        for laneline in self.env.laneline:
+            if Vehicle.has_overlap(ego_box2d, laneline):
+                return True
+
+        block_size = self.env.map_size
+        lanewidth = self.env.lanewidth
+
+        # down lane
+        if x >= -lanewidth and x <= 0 and (y >= -2 * lanewidth or y >= 2 * lanewidth):
+            if yaw >= 0 and yaw <= np.pi:
+                return True
+        # up lane
+        elif x >= 0 and x <= lanewidth and (y <= -2 * lanewidth or y >= 2 * lanewidth):
+            if not (yaw >= 0 and yaw <= np.pi):
+                return True
+        # right lane
+        elif y >= -lanewidth and y <= 0 and (x < -2 * lanewidth or x > 2 * lanewidth):
+            if yaw >= 0.5 * np.pi and yaw <= 1.5 * np.pi:
+                return True
+        # left lane
+        elif y >= 0 and y <= lanewidth and (x < -2 * lanewidth or x > 2 * lanewidth):
+            if not (yaw >= 0.5 * np.pi and yaw <= 1.5 * np.pi):
+                return True
+
+        return False
 
 
 def run():
@@ -159,4 +194,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-

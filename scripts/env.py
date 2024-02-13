@@ -41,5 +41,3 @@ class EnvCrossroads:
         plt.plot(*self.laneline[1], linestyle='--', color='orange', linewidth=2)
         plt.plot(*self.laneline[2], linestyle='--', color='orange', linewidth=2)
         plt.plot(*self.laneline[3], linestyle='--', color='orange', linewidth=2)
-
-

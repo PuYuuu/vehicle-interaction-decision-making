@@ -78,6 +78,11 @@ class Vehicle:
         self.v += acc * dt
         self.yaw += omega * dt
 
+        while self.yaw > 2 * np.pi:
+            self.yaw -= 2 * np.pi
+        while self.yaw < 0:
+            self.yaw += 2 * np.pi
+
 
     def draw_vehicle(self):
         head = np.array(
