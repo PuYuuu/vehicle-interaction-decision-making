@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 
 class Vehicle:
-    def __init__(self, x, y, yaw, length = 5, width = 2,
-                 color = 'k', safe_length = 8, safe_width = 2.4):
+    def __init__(self, x, y, yaw, color = 'k', length = 5,
+                 width = 2, safe_length = 8, safe_width = 2.4):
         self.x = x
         self.y = y
         self.yaw = yaw
@@ -16,9 +16,29 @@ class Vehicle:
         self.safe_width = safe_width
         self.vehicle_box2d = self.get_box2d()
         self.safezone = self.get_safezone()
+        self.level = 0
+        self.target = [0, 0]
 
 
-    def get_box2d(self):
+    def set_level(self, level):
+        if level >= 0 and level < 3:
+            self.level = level
+        else:
+            print("set_level error, the level must be >= 0 and > 3 !")
+
+
+    def set_target(self, target):
+        if len(target) != 2:
+            print("set_target error, the target len must equal 2 !")
+            return
+
+        if target[0] >= -25 and target[0] <= 25 and target[1] >= -25 and target[1] <= 25:
+            self.target = target
+        else:
+            print("set_target error, the target range must >= -25 and <= 25 !")
+
+
+    def get_box2d(self, tar_offset = None):
         vehicle = np.array(
             [[-self.length/2, self.length/2, self.length/2, -self.length/2, -self.length/2],
             [self.width/2, self.width/2, -self.width/2, -self.width/2, self.width/2]]
@@ -27,12 +47,15 @@ class Vehicle:
                      [np.sin(self.yaw), np.cos(self.yaw)]])
 
         vehicle = np.dot(rot, vehicle)
-        vehicle += np.array([[self.x], [self.y]])
+        if tar_offset is None:
+            vehicle += np.array([[self.x], [self.y]])
+        else:
+            vehicle += np.array([[tar_offset[0]], [tar_offset[1]]])
 
         return vehicle
 
 
-    def get_safezone(self):
+    def get_safezone(self, tar_offset = None):
         safezone = np.array(
             [[-self.safe_length/2, self.safe_length/2, self.safe_length/2, -self.safe_length/2, -self.safe_length/2],
             [self.safe_width/2, self.safe_width/2, -self.safe_width/2, -self.safe_width/2, self.safe_width/2]]
@@ -41,7 +64,10 @@ class Vehicle:
                      [np.sin(self.yaw), np.cos(self.yaw)]])
 
         safezone = np.dot(rot, safezone)
-        safezone += np.array([[self.x], [self.y]])
+        if tar_offset is None:
+            safezone += np.array([[self.x], [self.y]])
+        else:
+            safezone += np.array([[tar_offset[0]], [tar_offset[1]]])
 
         return safezone
 
@@ -51,9 +77,6 @@ class Vehicle:
         self.y += self.v * np.sin(self.yaw) * dt
         self.v += acc * dt
         self.yaw += omega * dt
-
-        self.vehicle_box2d = self.get_box2d()
-        self.safezone = self.get_safezone()
 
 
     def draw_vehicle(self):
