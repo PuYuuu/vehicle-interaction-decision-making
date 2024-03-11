@@ -28,16 +28,11 @@ class EnvCrossroads:
 
 
     def draw_env(self):
-        plt.fill(*self.rect[0], color='gray', alpha=0.5)
-        plt.fill(*self.rect[1], color='gray', alpha=0.5)
-        plt.fill(*self.rect[2], color='gray', alpha=0.5)
-        plt.fill(*self.rect[3], color='gray', alpha=0.5)
-        plt.plot(*self.rect[0], color='k', linewidth=2)
-        plt.plot(*self.rect[1], color='k', linewidth=2)
-        plt.plot(*self.rect[2], color='k', linewidth=2)
-        plt.plot(*self.rect[3], color='k', linewidth=2)
+        for i in range(len(self.rect)):
+            plt.fill(*self.rect[i], color='gray', alpha=0.5)
 
-        plt.plot(*self.laneline[0], linestyle='--', color='orange', linewidth=2)
-        plt.plot(*self.laneline[1], linestyle='--', color='orange', linewidth=2)
-        plt.plot(*self.laneline[2], linestyle='--', color='orange', linewidth=2)
-        plt.plot(*self.laneline[3], linestyle='--', color='orange', linewidth=2)
+        for i in range(len(self.rect)):
+            plt.plot(*self.rect[i], color='k', linewidth=2)
+
+        for i in range(len(self.laneline)):
+            plt.plot(*self.laneline[i], linestyle='--', color='orange', linewidth=2)
