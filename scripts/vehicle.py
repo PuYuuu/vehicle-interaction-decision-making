@@ -1,9 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from vehicle_base import VehicleBase
+from planner import KLevelPlanner
 
-class Vehicle:
-    def __init__(self, name, x, y, yaw, color = 'k', length = 5,
+
+class Vehicle(VehicleBase):
+    def __init__(self, name, x, y, yaw, env = None, dt = 0.1, color = 'k', length = 5,
                  width = 2, safe_length = 8, safe_width = 2.4):
         self.name = name
         self.x = x
@@ -18,8 +21,12 @@ class Vehicle:
         self.vehicle_box2d = self.get_box2d()
         self.safezone = self.get_safezone()
         self.level = 0
-        self.target = [0, 0]
+        self.target = [0, 0, 0]
         self.have_got_target = False
+        self.dt = dt
+
+        self.env = env
+        self.planner = KLevelPlanner(env, 6, self.dt)
 
 
     def set_level(self, level):
@@ -74,6 +81,11 @@ class Vehicle:
         return safezone
 
 
+    def excute(self, other:VehicleBase):
+        acc, omega, excepted_traj, total_path = self.planner.planning(self, other)
+        self.update(acc, omega, self.dt)
+
+
     def update(self, acc, omega, dt):
         self.x += self.v * np.cos(self.yaw) * dt
         self.y += self.v * np.sin(self.yaw) * dt
@@ -92,6 +104,7 @@ class Vehicle:
 
         if ((self.x - self.target[0]) ** 2 + (self.y - self.target[1]) ** 2) < 3:
             self.have_got_target = True
+            self.v = 0
             # print("{} is goal !".format(self.name))
 
     def draw_vehicle(self, fill_mode = False):
@@ -116,81 +129,3 @@ class Vehicle:
     def is_get_target(self):
         return self.have_got_target
 
-
-    @staticmethod
-    def has_overlap(box2d_0, box2d_1) -> bool:
-        total_sides = []
-        for i in range(1, len(box2d_0[0])):
-            vec_x = box2d_0[0][i] - box2d_0[0][i - 1]
-            vec_y = box2d_0[1][i] - box2d_0[1][i - 1]
-            total_sides.append([vec_x, vec_y])
-        for i in range(1, len(box2d_1[0])):
-            vec_x = box2d_1[0][i] - box2d_1[0][i - 1]
-            vec_y = box2d_1[1][i] - box2d_1[1][i - 1]
-            total_sides.append([vec_x, vec_y])
-
-        for i in range(len(total_sides)):
-            separating_axis = [-total_sides[i][1], total_sides[i][0]]
-
-            vehicle_min = np.inf
-            vehicle_max = -np.inf
-            for j in range(0, len(box2d_0[0])):
-                project = separating_axis[0] * box2d_0[0][j] + separating_axis[1] * box2d_0[1][j]
-                vehicle_min = min(vehicle_min, project)
-                vehicle_max = max(vehicle_max, project)
-
-            box2d_min = np.inf
-            box2d_max = -np.inf
-            for j in range(0, len(box2d_1[0])):
-                project = separating_axis[0] * box2d_1[0][j] + separating_axis[1] * box2d_1[1][j]
-                box2d_min = min(box2d_min, project)
-                box2d_max = max(box2d_max, project)
-
-            if vehicle_min > box2d_max or box2d_min > vehicle_max:
-                return False
-
-        return True
-
-
-if __name__ == "__main__":
-    print("has_overlap() test ...")
-    print("========================================")
-    vehicle = Vehicle(6.2, -1, -1.2)
-    rect = [
-            [[-25, -25, -2*4, -4, -4, -25],
-                [-25, -4, -4, -2*4, -25, -25]],
-            [[25, 25, 2*4, 4, 4, 25],
-                [-25, -4, -4, -2*4, -25, -25]],
-        ]
-    laneline = [
-        [[0, 0], [25, 0]],
-        [[0, -15], [-7, -7]],
-        [[5, -25], [5, -25]],
-        [[25, 8], [0, 0]]
-    ]
-
-    bool_has_overlap = Vehicle.has_overlap(vehicle.get_box2d(), rect[0])
-    print("has_overlap with rect[0]: ", bool_has_overlap)
-    bool_has_overlap = Vehicle.has_overlap(vehicle.get_box2d(), rect[1])
-    print("has_overlap with rect[1]: ", bool_has_overlap)
-    bool_has_overlap = Vehicle.has_overlap(vehicle.get_box2d(), laneline[0])
-    print("has_overlap with laneline[0]: ", bool_has_overlap)
-    bool_has_overlap = Vehicle.has_overlap(vehicle.get_box2d(), laneline[1])
-    print("has_overlap with laneline[1]: ", bool_has_overlap)
-    bool_has_overlap = Vehicle.has_overlap(vehicle.get_box2d(), laneline[2])
-    print("has_overlap with laneline[2]: ", bool_has_overlap)
-    bool_has_overlap = Vehicle.has_overlap(vehicle.get_box2d(), laneline[3])
-    print("has_overlap with laneline[2]: ", bool_has_overlap)
-
-    plt.fill(*rect[0], color='gray', alpha=0.5)
-    plt.fill(*rect[1], color='gray', alpha=0.5)
-    plt.plot(*laneline[0], linestyle='--', color='orange', linewidth=2)
-    plt.plot(*laneline[1], linestyle='--', color='orange', linewidth=2)
-    plt.plot(*laneline[2], linestyle='--', color='orange', linewidth=2)
-    plt.plot(*laneline[3], linestyle='--', color='orange', linewidth=2)
-    vehicle.draw_vehicle()
-
-    plt.xlim(-25, 25)
-    plt.ylim(-25, 25)
-    plt.gca().set_aspect('equal')
-    plt.show()
