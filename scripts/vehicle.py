@@ -30,8 +30,8 @@ class Vehicle:
 
 
     def set_target(self, target):
-        if len(target) != 2:
-            print("set_target error, the target len must equal 2 !")
+        if len(target) != 3:
+            print("set_target error, the target len must equal 3 !")
             return
 
         if target[0] >= -25 and target[0] <= 25 and target[1] >= -25 and target[1] <= 25:
@@ -90,11 +90,11 @@ class Vehicle:
         elif self.v < -20:
             self.v = -20
 
-        if ((self.x - self.target[0]) ** 2 + (self.y - self.target[1]) ** 2) < 2:
+        if ((self.x - self.target[0]) ** 2 + (self.y - self.target[1]) ** 2) < 3:
             self.have_got_target = True
-            print("{} is goal !".format(self.name))
+            # print("{} is goal !".format(self.name))
 
-    def draw_vehicle(self, draw_head = True):
+    def draw_vehicle(self, fill_mode = False):
         head = np.array(
             [[0.3 * self.length, 0.3 * self.length], [self.width/2, -self.width/2]]
         )
@@ -105,9 +105,12 @@ class Vehicle:
 
         self.vehicle_box2d = self.get_box2d()
 
-        plt.plot(self.vehicle_box2d[0, :], self.vehicle_box2d[1, :], self.color)
-        if draw_head:
+        if not fill_mode:
+            plt.plot(self.vehicle_box2d[0, :], self.vehicle_box2d[1, :], self.color)
             plt.plot(head[0, :], head[1, :], self.color)
+        else:
+            plt.fill(self.vehicle_box2d[0, :], self.vehicle_box2d[1, :], color=self.color, alpha=0.5)
+
 
     @property
     def is_get_target(self):
