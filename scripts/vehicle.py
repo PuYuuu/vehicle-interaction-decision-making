@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+import utils
 from vehicle_base import VehicleBase
 from planner import KLevelPlanner
 
@@ -81,31 +82,20 @@ class Vehicle(VehicleBase):
         return safezone
 
 
-    def excute(self, other:VehicleBase):
+    def excute(self, other:VehicleBase, traj = None, path = None):
         acc, omega, excepted_traj, total_path = self.planner.planning(self, other)
-        self.update(acc, omega, self.dt)
-
-
-    def update(self, acc, omega, dt):
-        self.x += self.v * np.cos(self.yaw) * dt
-        self.y += self.v * np.sin(self.yaw) * dt
-        self.v += acc * dt
-        self.yaw += omega * dt
-
-        while self.yaw > 2 * np.pi:
-            self.yaw -= 2 * np.pi
-        while self.yaw < 0:
-            self.yaw += 2 * np.pi
-
-        if self.v > 20:
-            self.v = 20
-        elif self.v < -20:
-            self.v = -20
+        tmp_node = utils.Node(self.x, self.y, self.yaw, self.v)
+        self.x, self.y, self.yaw, self.v = utils.kinematic_propagate(tmp_node, [acc, omega], self.dt)
 
         if ((self.x - self.target[0]) ** 2 + (self.y - self.target[1]) ** 2) < 3:
             self.have_got_target = True
             self.v = 0
-            # print("{} is goal !".format(self.name))
+        
+        if traj is not None:
+            traj = excepted_traj
+        if path is not None:
+            path = total_path
+
 
     def draw_vehicle(self, fill_mode = False):
         head = np.array(

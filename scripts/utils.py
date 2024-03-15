@@ -1,5 +1,17 @@
 import numpy as np
 
+
+class Node:
+     def __init__(self, x = 0, y = 0, yaw = 0, v = 0, action = None, p = None):
+         self.x = x
+         self.y = y
+         self.yaw = yaw
+         self.v = v
+         self.action = action
+         self.reward = 0
+         self.parent = p
+
+
 def has_overlap(box2d_0, box2d_1) -> bool:
         total_sides = []
         for i in range(1, len(box2d_0[0])):
@@ -33,5 +45,24 @@ def has_overlap(box2d_0, box2d_1) -> bool:
 
         return True
 
-def kinematic_propagate():
-    pass
+
+def kinematic_propagate(node:Node, act, dt):
+        acc = act[0]
+        omega = act[1]
+
+        x = node.x + node.v * np.cos(node.yaw) * dt
+        y = node.y + node.v * np.sin(node.yaw) * dt
+        v = node.v + acc * dt
+        yaw = node.yaw + omega * dt
+
+        if yaw > 2 * np.pi:
+            yaw -= 2 * np.pi
+        if yaw < 0:
+            yaw += 2 * np.pi
+
+        if v > 20:
+            v = 20
+        elif v < -20:
+            v = -20
+
+        return x, y, yaw, v

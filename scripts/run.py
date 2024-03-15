@@ -42,8 +42,10 @@ def run(rounds_num:int, save_path:str) -> None:
         vehicle_1_history = [[-env.lanewidth / 2, init_y_1, -np.pi / 2]]
         
         print("\n================== Round {} ==================".format(iter))
-        print("Vehicle 0 >>> init_x : {}, init_y : {}, init_v : {}".format(vehicle_0.x, init_y_0, init_v_0))
-        print("Vehicle 1 >>> init_x : {}, init_y : {}, init_v : {}".format(vehicle_0.x, init_y_1, init_v_1))
+        print("Vehicle 0 >>> init_x : {:.2f}, init_y : {:.2f}, init_v : {:.2f}".format(
+            vehicle_0.x, init_y_0, init_v_0))
+        print("Vehicle 1 >>> init_x : {:.2f}, init_y : {:.2f}, init_v : {:.2f}".format(
+            vehicle_0.x, init_y_1, init_v_1))
 
         cur_loop_count = 0
         while True:

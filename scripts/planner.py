@@ -8,17 +8,6 @@ from env import EnvCrossroads
 from vehicle_base import VehicleBase
 
 
-class Node:
-     def __init__(self, x = 0, y = 0, yaw = 0, v = 0, action = None, p = None):
-         self.x = x
-         self.y = y
-         self.yaw = yaw
-         self.v = v
-         self.action = action
-         self.reward = 0
-         self.parent = p
-
-
 class KLevelPlanner:
 
     action_sets = [[0, 0],              # maintain
@@ -49,25 +38,8 @@ class KLevelPlanner:
         return KLevelPlanner.action_sets[actions_id[0]][0], KLevelPlanner.action_sets[actions_id[0]][1], traj, total_path
 
 
-    def update(self, node:Node, act):
-        acc = act[0]
-        omega = act[1]
-
-        x = node.x + node.v * np.cos(node.yaw) * self.dt
-        y = node.y + node.v * np.sin(node.yaw) * self.dt
-        v = node.v + acc * self.dt
-        yaw = node.yaw + omega * self.dt
-
-        if yaw > 2 * np.pi:
-            yaw -= 2 * np.pi
-        if yaw < 0:
-            yaw += 2 * np.pi
-
-        return x, y, yaw, v
-
-
     def helper(self, ego:VehicleBase, other:VehicleBase, traj):
-        root = Node(ego.x, ego.y, ego.yaw, ego.v)
+        root = utils.Node(ego.x, ego.y, ego.yaw, ego.v)
         queue = deque()
         queue.append(root)
         step = 0
@@ -84,7 +56,7 @@ class KLevelPlanner:
                         if random_number > keep_rate:
                             continue
 
-                    x, y, yaw, v = self.update(tmp, KLevelPlanner.action_sets[i])
+                    x, y, yaw, v = utils.kinematic_propagate(tmp, KLevelPlanner.action_sets[i], self.dt)
                     ego_box2d = ego.get_box2d([x, y])
                     ego_safezone = ego.get_safezone([x, y])
 
@@ -114,7 +86,7 @@ class KLevelPlanner:
                                  self.weight_offroad * offroad + self.weight_distance * distance + \
                                  self.weight_direction * direction + self.weight_velocity * velocity
 
-                    node = Node(x, y, yaw, v, i, tmp)
+                    node = utils.Node(x, y, yaw, v, i, tmp)
                     node.reward = tmp.reward + self.lamda ** step * cur_reward
 
                     queue.append(node)
