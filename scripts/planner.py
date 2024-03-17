@@ -27,7 +27,7 @@ class KLevelPlanner:
         self.weight_safe = 20
         self.weight_offroad = 200
         self.weight_velocity = 1000
-        self.weight_direction = 10
+        self.weight_direction = 100
         self.weight_distance = 10
 
 
@@ -56,7 +56,8 @@ class KLevelPlanner:
                         if random_number > keep_rate:
                             continue
 
-                    x, y, yaw, v = utils.kinematic_propagate(tmp, KLevelPlanner.action_sets[i], self.dt)
+                    x, y, yaw, v = utils.kinematic_propagate(
+                        tmp, KLevelPlanner.action_sets[i], ego.length * 0.8, self.dt)
                     ego_box2d = ego.get_box2d([x, y])
                     ego_safezone = ego.get_safezone([x, y])
 

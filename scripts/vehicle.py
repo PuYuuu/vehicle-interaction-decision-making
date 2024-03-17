@@ -82,19 +82,18 @@ class Vehicle(VehicleBase):
         return safezone
 
 
-    def excute(self, other:VehicleBase, traj = None, path = None):
+    def excute(self, other:VehicleBase):
         acc, omega, excepted_traj, total_path = self.planner.planning(self, other)
         tmp_node = utils.Node(self.x, self.y, self.yaw, self.v)
-        self.x, self.y, self.yaw, self.v = utils.kinematic_propagate(tmp_node, [acc, omega], self.dt)
+        self.x, self.y, self.yaw, self.v = utils.kinematic_propagate(
+            tmp_node, [acc, omega], self.length * 0.8, self.dt)
 
         if ((self.x - self.target[0]) ** 2 + (self.y - self.target[1]) ** 2) < 3:
             self.have_got_target = True
             self.v = 0
+            excepted_traj = []
         
-        if traj is not None:
-            traj = excepted_traj
-        if path is not None:
-            path = total_path
+        return excepted_traj, total_path
 
 
     def draw_vehicle(self, fill_mode = False):

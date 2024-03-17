@@ -46,10 +46,11 @@ def has_overlap(box2d_0, box2d_1) -> bool:
         return True
 
 
-def kinematic_propagate(node:Node, act, dt):
+def kinematic_propagate(node:Node, act, wheel_base, dt):
         acc = act[0]
-        omega = act[1]
+        delta = act[1]
 
+        omega = (np.tan(delta) / wheel_base) * node.v
         x = node.x + node.v * np.cos(node.yaw) * dt
         y = node.y + node.v * np.sin(node.yaw) * dt
         v = node.v + acc * dt

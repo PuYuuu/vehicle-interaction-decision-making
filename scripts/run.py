@@ -15,7 +15,8 @@ from vehicle import Vehicle
 DT = 0.5
 
 
-def run(rounds_num:int, save_path:str) -> None:
+def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
+    print(f"rounds_num: {rounds_num}")
     env = EnvCrossroads(size=25, lanewidth=4.2)
     max_per_iters = 20 / DT
 
@@ -59,34 +60,34 @@ def run(rounds_num:int, save_path:str) -> None:
                 print("failed, exit...")
                 break
 
-            # TODO: Use multithreading to optimize time cost
             start_time = time.time()
             if not vehicle_0.is_get_target:
-                vehicle_0.excute(vehicle_1)
+                excepted_traj_0, total_path_0 = vehicle_0.excute(vehicle_1)
                 vehicle_0_history.append([vehicle_0.x, vehicle_0.y, vehicle_0.yaw])
  
             if not vehicle_1.is_get_target:
-                vehicle_1.excute(vehicle_0)
+                excepted_traj_1, total_path_1 = vehicle_1.excute(vehicle_0)
                 vehicle_1_history.append([vehicle_1.x, vehicle_1.y, vehicle_1.yaw])
             elapsed_time = time.time() - start_time
             # print("cost time: {}".format(elapsed_time))
 
-            plt.cla()
-            env.draw_env()
-            vehicle_0.draw_vehicle()
-            vehicle_1.draw_vehicle()
-            plt.plot(vehicle_0.target[0], vehicle_0.target[1], "xb")
-            plt.plot(vehicle_1.target[0], vehicle_1.target[1], "xr")
-            plt.text(10, -15, "v = {:.2f} m/s".format(vehicle_0.v), color='blue')
-            plt.text(10,  15, "v = {:.2f} m/s".format(vehicle_1.v), color='red')
-            # plt.plot([traj[0] for traj in excepted_traj_0], [traj[1] for traj in excepted_traj_0], color='blue', linewidth=1)
-            # plt.plot([traj[0] for traj in excepted_traj_1], [traj[1] for traj in excepted_traj_1], color='red', linewidth=1)
-            # for path in total_path_0:
-            #     plt.plot(path[0], path[1], color='green', linewidth=1)
-            plt.xlim(-25, 25)
-            plt.ylim(-25, 25)
-            plt.gca().set_aspect('equal')
-            plt.pause(0.1)
+            if show_animation:
+                plt.cla()
+                env.draw_env()
+                vehicle_0.draw_vehicle()
+                vehicle_1.draw_vehicle()
+                plt.plot(vehicle_0.target[0], vehicle_0.target[1], "xb")
+                plt.plot(vehicle_1.target[0], vehicle_1.target[1], "xr")
+                plt.text(10, -15, "v = {:.2f} m/s".format(vehicle_0.v), color='blue')
+                plt.text(10,  15, "v = {:.2f} m/s".format(vehicle_1.v), color='red')
+                plt.plot([traj[0] for traj in excepted_traj_0], [traj[1] for traj in excepted_traj_0], color='blue', linewidth=1)
+                plt.plot([traj[0] for traj in excepted_traj_1], [traj[1] for traj in excepted_traj_1], color='red', linewidth=1)
+                # for path in total_path_0:
+                #     plt.plot(path[0], path[1], color='green', linewidth=1)
+                plt.xlim(-25, 25)
+                plt.ylim(-25, 25)
+                plt.gca().set_aspect('equal')
+                plt.pause(0.1)
             cur_loop_count += 1
 
         plt.cla()
@@ -110,6 +111,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--rounds', '-r', type = int, default = 5, help='')
     parser.add_argument('--output_path', '-o', type = str, default = None, help='')
+    parser.add_argument('--show', action='store_true', default=False, help = '')
     args = parser.parse_args()
 
     if args.output_path is None:
@@ -118,8 +120,8 @@ if __name__ == "__main__":
 
     current_time = datetime.now()
     formatted_time = current_time.strftime("%Y-%m-%d-%H-%M-%S")
-    result_save_path = os.path.join(args.output_path, formatted_time)
+    result_save_path = os.path.join(args.output_path, "logs", formatted_time)
     os.makedirs(result_save_path, exist_ok=True)
     print("Experiment results save at \"{}\"".format(result_save_path))
 
-    run(args.rounds, result_save_path)
+    run(args.rounds, result_save_path, args.show)
