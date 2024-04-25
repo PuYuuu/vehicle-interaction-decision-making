@@ -18,7 +18,7 @@ DT = 0.5
 def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
     print(f"rounds_num: {rounds_num}")
     env = EnvCrossroads(size=25, lanewidth=4.2)
-    max_per_iters = 20 / DT
+    max_per_iters = 25 / DT
 
     succeed_count = 0
     for iter in range(rounds_num):

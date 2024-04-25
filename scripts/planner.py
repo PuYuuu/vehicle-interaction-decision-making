@@ -15,6 +15,7 @@ WEIGHT_VELOCITY = 10
 WEIGHT_DIRECTION = 1
 WEIGHT_DISTANCE = 0.1
 
+
 class MonteCarloTreeSearch:
     EXPLORATE_RATE = 1 / ( 2 * math.sqrt(2.0))
 
@@ -55,8 +56,8 @@ class MonteCarloTreeSearch:
 
     def default_policy(self, node: Node):
         while node.is_terminal == False:
-            next_node = node.next_node(self.ego_vehicle.length * 0.8, self.dt)
-            self.calc_cur_value(next_node, node.reward)
+            next_node = node.next_node(self.dt)
+            self.calc_cur_value(next_node, node.value)
             node = next_node
 
         return node.value
@@ -72,7 +73,7 @@ class MonteCarloTreeSearch:
         next_action = random.choice(utils.ActionList)
         while node.is_terminal == False and next_action in tried_actions:
             next_action = random.choice(utils.ActionList)
-        node.add_child(next_action, self.ego_vehicle.length * 0.8, self.dt)
+        node.add_child(next_action, self.dt)
         self.calc_cur_value(node.children[-1], node.value)
 
         return node.children[-1]
@@ -159,6 +160,7 @@ class MonteCarloTreeSearch:
 
         return False
 
+
 class KLevelPlanner:
     def __init__(self, env: EnvCrossroads, steps = 6, dt = 0.1):
         self.env = env
@@ -174,13 +176,10 @@ class KLevelPlanner:
 
 
     def helper(self, ego: VehicleBase, other: VehicleBase, traj):
-        mcts = MonteCarloTreeSearch(ego, other, self.env, traj, 8000, self.dt)
+        mcts = MonteCarloTreeSearch(ego, other, self.env, traj, 10000, self.dt)
         current_node = Node(ego.x, ego.y, ego.yaw, ego.v)
-        # for _ in range(Node.MAX_LEVEL):
-        #     current_node = mcts.excute(current_node)
         current_node = mcts.excute(current_node)
-        current_node = mcts.excute(current_node)
-        for _ in range(Node.MAX_LEVEL - 2):
+        for _ in range(Node.MAX_LEVEL - 1):
             current_node = mcts.get_best_child(current_node, 0)
 
         actions = [act.value for act in current_node.actions]
@@ -189,6 +188,11 @@ class KLevelPlanner:
             pos_list.append([current_node.x, current_node.y])
             current_node = current_node.parent
         expected_traj = pos_list[::-1]
+
+        if len(expected_traj) < self.steps + 1:
+            last_expected_pos = expected_traj[-1]
+            for _ in range(self.steps + 1 - len(expected_traj)):
+                expected_traj.append(last_expected_pos)
 
         return actions, expected_traj
 

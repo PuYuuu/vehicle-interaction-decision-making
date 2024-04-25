@@ -9,8 +9,8 @@ class Action(Enum):
     """Enum of action sets for vehicle."""
 
     MAINTAIN = [0, 0]              # 'maintain'
-    TURNLEFT = [0, math.pi / 6]    # 'turn left'
-    TURNRIGHT = [0, -math.pi / 6]  # 'turn right'
+    TURNLEFT = [0, math.pi / 4]    # 'turn left'
+    TURNRIGHT = [0, -math.pi / 4]  # 'turn right'
     ACCELERATE = [2.5, 0]          # 'accelerate'
     DECELERATE = [-2.5, 0]         # 'decelerate'
     BRAKE = [-5, 0]                # 'brake'
@@ -49,17 +49,17 @@ class Node:
 
         return False
 
-    def add_child(self, next_action: Action, wb: float, delta_t: float) -> "Node":
-        x, y, yaw, v = kinematic_propagate(self, next_action.value, wb, delta_t)
+    def add_child(self, next_action: Action, delta_t: float) -> "Node":
+        x, y, yaw, v = kinematic_propagate(self, next_action.value, delta_t)
         node = Node(x, y, yaw, v, self.cur_level + 1, self, next_action)
         node.actions = self.actions + [next_action]
         self.children.append(node)
 
         return node
 
-    def next_node(self, wb: float, delta_t: float):
+    def next_node(self, delta_t: float):
         next_action = random.choice(ActionList)
-        x, y, yaw, v = kinematic_propagate(self, next_action.value, wb, delta_t)
+        x, y, yaw, v = kinematic_propagate(self, next_action.value, delta_t)
         node = Node(x, y, yaw, v, self.cur_level + 1, None, next_action)
 
         return node
@@ -101,10 +101,9 @@ def has_overlap(box2d_0, box2d_1) -> bool:
     return True
 
 
-def kinematic_propagate(node: Node, act: List[float], wheel_base: float, dt: float):
-    acc, delta = act[0], act[1]
+def kinematic_propagate(node: Node, act: List[float], dt: float):
+    acc, omega = act[0], act[1]
 
-    omega = (np.tan(delta) / wheel_base) * node.v
     x = node.x + node.v * np.cos(node.yaw) * dt
     y = node.y + node.v * np.sin(node.yaw) * dt
     v = node.v + acc * dt
