@@ -18,7 +18,7 @@ DT = 0.5
 def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
     print(f"rounds_num: {rounds_num}")
     env = EnvCrossroads(size=25, lanewidth=4.2)
-    max_per_iters = 20 / DT
+    max_per_iters = 25 / DT
 
     succeed_count = 0
     for iter in range(rounds_num):
@@ -41,7 +41,7 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
 
         vehicle_0_history = [[env.lanewidth / 2, init_y_0, np.pi / 2]]
         vehicle_1_history = [[-env.lanewidth / 2, init_y_1, -np.pi / 2]]
-        
+
         print("\n================== Round {} ==================".format(iter))
         print("Vehicle 0 >>> init_x : {:.2f}, init_y : {:.2f}, init_v : {:.2f}".format(
             vehicle_0.x, init_y_0, init_v_0))
@@ -62,11 +62,11 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
 
             start_time = time.time()
             if not vehicle_0.is_get_target:
-                excepted_traj_0, total_path_0 = vehicle_0.excute(vehicle_1)
+                excepted_traj_0 = vehicle_0.excute(vehicle_1)
                 vehicle_0_history.append([vehicle_0.x, vehicle_0.y, vehicle_0.yaw])
  
             if not vehicle_1.is_get_target:
-                excepted_traj_1, total_path_1 = vehicle_1.excute(vehicle_0)
+                excepted_traj_1 = vehicle_1.excute(vehicle_0)
                 vehicle_1_history.append([vehicle_1.x, vehicle_1.y, vehicle_1.yaw])
             elapsed_time = time.time() - start_time
             # print("cost time: {}".format(elapsed_time))
@@ -80,10 +80,8 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
                 plt.plot(vehicle_1.target[0], vehicle_1.target[1], "xr")
                 plt.text(10, -15, "v = {:.2f} m/s".format(vehicle_0.v), color='blue')
                 plt.text(10,  15, "v = {:.2f} m/s".format(vehicle_1.v), color='red')
-                plt.plot([traj[0] for traj in excepted_traj_0], [traj[1] for traj in excepted_traj_0], color='blue', linewidth=1)
-                plt.plot([traj[0] for traj in excepted_traj_1], [traj[1] for traj in excepted_traj_1], color='red', linewidth=1)
-                # for path in total_path_0:
-                #     plt.plot(path[0], path[1], color='green', linewidth=1)
+                plt.plot([traj[0] for traj in excepted_traj_0[1:]], [traj[1] for traj in excepted_traj_0[1:]], color='blue', linewidth=1)
+                plt.plot([traj[0] for traj in excepted_traj_1[1:]], [traj[1] for traj in excepted_traj_1[1:]], color='red', linewidth=1)
                 plt.xlim(-25, 25)
                 plt.ylim(-25, 25)
                 plt.gca().set_aspect('equal')

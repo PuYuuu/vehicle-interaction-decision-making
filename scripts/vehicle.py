@@ -83,17 +83,19 @@ class Vehicle(VehicleBase):
 
 
     def excute(self, other:VehicleBase):
-        acc, omega, excepted_traj, total_path = self.planner.planning(self, other)
+        acc, omega, excepted_traj = self.planner.planning(self, other)
+
+        # update ego
         tmp_node = utils.Node(self.x, self.y, self.yaw, self.v)
         self.x, self.y, self.yaw, self.v = utils.kinematic_propagate(
-            tmp_node, [acc, omega], self.length * 0.8, self.dt)
+            tmp_node, [acc, omega], self.dt)
 
         if ((self.x - self.target[0]) ** 2 + (self.y - self.target[1]) ** 2) < 3:
             self.have_got_target = True
             self.v = 0
             excepted_traj = []
-        
-        return excepted_traj, total_path
+
+        return excepted_traj
 
 
     def draw_vehicle(self, fill_mode = False):
