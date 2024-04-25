@@ -83,7 +83,8 @@ class Vehicle(VehicleBase):
 
 
     def excute(self, other:VehicleBase):
-        acc, omega, excepted_traj = self.planner.planning(self, other)
+        act, excepted_traj = self.planner.planning(self, other)
+        acc, omega = act.value[0], act.value[1]
 
         # update ego
         tmp_node = utils.Node(self.x, self.y, self.yaw, self.v)
@@ -95,7 +96,7 @@ class Vehicle(VehicleBase):
             self.v = 0
             excepted_traj = []
 
-        return excepted_traj
+        return act, excepted_traj
 
 
     def draw_vehicle(self, fill_mode = False):
@@ -119,4 +120,3 @@ class Vehicle(VehicleBase):
     @property
     def is_get_target(self):
         return self.have_got_target
-

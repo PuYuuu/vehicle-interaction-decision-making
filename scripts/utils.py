@@ -7,7 +7,6 @@ import random
 
 class Action(Enum):
     """Enum of action sets for vehicle."""
-
     MAINTAIN = [0, 0]              # 'maintain'
     TURNLEFT = [0, math.pi / 4]    # 'turn left'
     TURNRIGHT = [0, -math.pi / 4]  # 'turn right'
@@ -65,7 +64,8 @@ class Node:
         return node
 
     def __repr__(self):
-        return f"children: {len(self.children)}, visits: {self.visits}, reward: {self.reward}, actions: {self.actions}"
+        return f"children: {len(self.children)}, visits: {self.visits}, \
+                reward: {self.reward}, actions: {self.actions}"
 
 def has_overlap(box2d_0, box2d_1) -> bool:
     total_sides = []

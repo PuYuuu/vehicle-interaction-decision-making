@@ -43,10 +43,8 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
         vehicle_1_history = [[-env.lanewidth / 2, init_y_1, -np.pi / 2]]
 
         print("\n================== Round {} ==================".format(iter))
-        print("Vehicle 0 >>> init_x : {:.2f}, init_y : {:.2f}, init_v : {:.2f}".format(
-            vehicle_0.x, init_y_0, init_v_0))
-        print("Vehicle 1 >>> init_x : {:.2f}, init_y : {:.2f}, init_v : {:.2f}".format(
-            vehicle_0.x, init_y_1, init_v_1))
+        print(f"Vehicle 0 >>> init_x: {vehicle_0.x:.2f}, init_y: {init_y_0:.2f}, init_v: {init_v_0:.2f}")
+        print(f"Vehicle 1 >>> init_x: {vehicle_1.x:.2f}, init_y: {init_y_1:.2f}, init_v: {init_v_1:.2f}")
 
         cur_loop_count = 0
         while True:
@@ -62,11 +60,11 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
 
             start_time = time.time()
             if not vehicle_0.is_get_target:
-                excepted_traj_0 = vehicle_0.excute(vehicle_1)
+                act_0, excepted_traj_0 = vehicle_0.excute(vehicle_1)
                 vehicle_0_history.append([vehicle_0.x, vehicle_0.y, vehicle_0.yaw])
  
             if not vehicle_1.is_get_target:
-                excepted_traj_1 = vehicle_1.excute(vehicle_0)
+                act_1, excepted_traj_1 = vehicle_1.excute(vehicle_0)
                 vehicle_1_history.append([vehicle_1.x, vehicle_1.y, vehicle_1.yaw])
             elapsed_time = time.time() - start_time
             # print("cost time: {}".format(elapsed_time))
@@ -78,10 +76,14 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
                 vehicle_1.draw_vehicle()
                 plt.plot(vehicle_0.target[0], vehicle_0.target[1], "xb")
                 plt.plot(vehicle_1.target[0], vehicle_1.target[1], "xr")
-                plt.text(10, -15, "v = {:.2f} m/s".format(vehicle_0.v), color='blue')
-                plt.text(10,  15, "v = {:.2f} m/s".format(vehicle_1.v), color='red')
-                plt.plot([traj[0] for traj in excepted_traj_0[1:]], [traj[1] for traj in excepted_traj_0[1:]], color='blue', linewidth=1)
-                plt.plot([traj[0] for traj in excepted_traj_1[1:]], [traj[1] for traj in excepted_traj_1[1:]], color='red', linewidth=1)
+                plt.text(10, -15, f"v = {vehicle_0.v:.2f} m/s", color='blue')
+                plt.text(10,  15, f"v = {vehicle_1.v:.2f} m/s", color='red')
+                plt.text(10, -18, act_0.name, fontsize=10, color='blue')
+                plt.text(10,  12, act_1.name, fontsize=10, color='red')
+                plt.plot([traj[0] for traj in excepted_traj_0[1:]],
+                         [traj[1] for traj in excepted_traj_0[1:]], color='blue', linewidth=1)
+                plt.plot([traj[0] for traj in excepted_traj_1[1:]],
+                         [traj[1] for traj in excepted_traj_1[1:]], color='red', linewidth=1)
                 plt.xlim(-25, 25)
                 plt.ylim(-25, 25)
                 plt.gca().set_aspect('equal')
@@ -99,10 +101,10 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
         plt.xlim(-25, 25)
         plt.ylim(-25, 25)
         plt.gca().set_aspect('equal')
-        plt.savefig(os.path.join(save_path, 'round_{}.svg'.format(iter)), format='svg', dpi=600)
+        plt.savefig(os.path.join(save_path, f"round_{iter}.svg"), format='svg', dpi=600)
 
     print("\n=========================================")
-    print("Experiment success {}/{}({:.2f}%) rounds.".format(succeed_count, rounds_num, 100*succeed_count/rounds_num))
+    print(f"Experiment success {succeed_count}/{rounds_num}({100*succeed_count/rounds_num:.2f}%) rounds.")
 
 
 if __name__ == "__main__":
@@ -120,6 +122,6 @@ if __name__ == "__main__":
     formatted_time = current_time.strftime("%Y-%m-%d-%H-%M-%S")
     result_save_path = os.path.join(args.output_path, "logs", formatted_time)
     os.makedirs(result_save_path, exist_ok=True)
-    print("Experiment results save at \"{}\"".format(result_save_path))
+    print(f"Experiment results save at \"{result_save_path}\"")
 
     run(args.rounds, result_save_path, args.show)

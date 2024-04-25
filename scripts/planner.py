@@ -170,9 +170,9 @@ class KLevelPlanner:
 
     def planning(self, ego:VehicleBase, other:VehicleBase):
         other_prediction = self.get_prediction(ego, other)
-        actions_id, traj = self.helper(ego, other, other_prediction)
+        actions, traj = self.helper(ego, other, other_prediction)
 
-        return actions_id[0][0], actions_id[0][1], traj
+        return actions[0], traj
 
 
     def helper(self, ego: VehicleBase, other: VehicleBase, traj):
@@ -182,7 +182,7 @@ class KLevelPlanner:
         for _ in range(Node.MAX_LEVEL - 1):
             current_node = mcts.get_best_child(current_node, 0)
 
-        actions = [act.value for act in current_node.actions]
+        actions = [act for act in current_node.actions]
         pos_list = []
         while current_node != None:
             pos_list.append([current_node.x, current_node.y])
