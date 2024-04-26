@@ -2,6 +2,7 @@ import os
 import math
 import time
 import random
+import logging
 import argparse
 from datetime import datetime
 
@@ -12,11 +13,12 @@ import utils
 from env import EnvCrossroads
 from vehicle import Vehicle
 
-DT = 0.5
-
+DT = 0.25
+LOG_LEVEL_DICT = {0:logging.DEBUG, 1:logging.INFO, 2:logging.WARNING,
+                  3:logging.ERROR, 4:logging.CRITICAL}
 
 def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
-    print(f"rounds_num: {rounds_num}")
+    logging.info(f"rounds_num: {rounds_num}")
     env = EnvCrossroads(size=25, lanewidth=4.2)
     max_per_iters = 25 / DT
 
@@ -42,20 +44,22 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
         vehicle_0_history = [[env.lanewidth / 2, init_y_0, np.pi / 2]]
         vehicle_1_history = [[-env.lanewidth / 2, init_y_1, -np.pi / 2]]
 
-        print("\n================== Round {} ==================".format(iter))
-        print(f"Vehicle 0 >>> init_x: {vehicle_0.x:.2f}, init_y: {init_y_0:.2f}, init_v: {init_v_0:.2f}")
-        print(f"Vehicle 1 >>> init_x: {vehicle_1.x:.2f}, init_y: {init_y_1:.2f}, init_v: {init_v_1:.2f}")
+        print(f"\n================== Round {iter} ==================")
+        logging.info(f"Vehicle 0 >>> init_x: {vehicle_0.x:.2f}, "
+                     f"init_y: {init_y_0:.2f}, init_v: {init_v_0:.2f}")
+        logging.info(f"Vehicle 1 >>> init_x: {vehicle_1.x:.2f}, "
+                     f"init_y: {init_y_1:.2f}, init_v: {init_v_1:.2f}")
 
         cur_loop_count = 0
         while True:
             if vehicle_0.is_get_target and vehicle_1.is_get_target:
-                print("success !")
+                logging.info(f"Round {iter} successed !")
                 succeed_count += 1
                 break
 
             if utils.has_overlap(vehicle_1.get_box2d(), vehicle_0.get_box2d()) or \
                 cur_loop_count > max_per_iters:
-                print("failed, exit...")
+                logging.info(f"Round {iter} failed, exit...")
                 break
 
             start_time = time.time()
@@ -67,7 +71,7 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
                 act_1, excepted_traj_1 = vehicle_1.excute(vehicle_0)
                 vehicle_1_history.append([vehicle_1.x, vehicle_1.y, vehicle_1.yaw])
             elapsed_time = time.time() - start_time
-            # print("cost time: {}".format(elapsed_time))
+            logging.debug(f"single step cost {elapsed_time:.6f} second")
 
             if show_animation:
                 plt.cla()
@@ -87,7 +91,7 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
                 plt.xlim(-25, 25)
                 plt.ylim(-25, 25)
                 plt.gca().set_aspect('equal')
-                plt.pause(0.1)
+                plt.pause(0.01)
             cur_loop_count += 1
 
         plt.cla()
@@ -104,24 +108,34 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
         plt.savefig(os.path.join(save_path, f"round_{iter}.svg"), format='svg', dpi=600)
 
     print("\n=========================================")
-    print(f"Experiment success {succeed_count}/{rounds_num}({100*succeed_count/rounds_num:.2f}%) rounds.")
+    logging.info(f"Experiment success {succeed_count}/{rounds_num}"
+                 f"({100*succeed_count/rounds_num:.2f}%) rounds.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--rounds', '-r', type = int, default = 5, help='')
-    parser.add_argument('--output_path', '-o', type = str, default = None, help='')
-    parser.add_argument('--show', action='store_true', default=False, help = '')
+    parser.add_argument('--rounds', '-r', type=int, default=5, help='')
+    parser.add_argument('--output_path', '-o', type=str, default=None, help='')
+    parser.add_argument('--log_level', '-l', type=int, default=1,
+                        help=f"0:logging.DEBUG\t1:logging.INFO\t"
+                             f"2:logging.WARNING\t3:logging.ERROR\t"
+                             f"4:logging.CRITICAL\t")
+    parser.add_argument('--show', action='store_true', default=False, help='')
     args = parser.parse_args()
-
+    print(LOG_LEVEL_DICT)
     if args.output_path is None:
         current_file_path = os.path.abspath(__file__)
         args.output_path = os.path.dirname(current_file_path)
+
+    logging.basicConfig(level=LOG_LEVEL_DICT[args.log_level],
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        handlers=[logging.StreamHandler()])
+    logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
     current_time = datetime.now()
     formatted_time = current_time.strftime("%Y-%m-%d-%H-%M-%S")
     result_save_path = os.path.join(args.output_path, "logs", formatted_time)
     os.makedirs(result_save_path, exist_ok=True)
-    print(f"Experiment results save at \"{result_save_path}\"")
+    logging.info(f"Experiment results save at \"{result_save_path}\"")
 
     run(args.rounds, result_save_path, args.show)

@@ -1,5 +1,6 @@
 import math
 import random
+import logging
 import numpy as np
 
 import utils
@@ -9,7 +10,7 @@ from vehicle_base import VehicleBase
 
 LAMDA = 0.9
 WEIGHT_AVOID = 10
-WEIGHT_SAFE =0.2
+WEIGHT_SAFE = 0.2
 WEIGHT_OFFROAD = 2
 WEIGHT_VELOCITY = 10
 WEIGHT_DIRECTION = 1
@@ -91,7 +92,7 @@ class MonteCarloTreeSearch:
                 bestchildren = [c]
                 bestscore = score
         if len(bestchildren) == 0:
-            print("No best child found, probably fatal")
+            logging.debug("No best child found, probably fatal !")
             return node
 
         return random.choice(bestchildren)
@@ -170,12 +171,12 @@ class KLevelPlanner:
 
     def planning(self, ego:VehicleBase, other:VehicleBase):
         other_prediction = self.get_prediction(ego, other)
-        actions, traj = self.helper(ego, other, other_prediction)
+        actions, traj = self.forward_simulate(ego, other, other_prediction)
 
         return actions[0], traj
 
 
-    def helper(self, ego: VehicleBase, other: VehicleBase, traj):
+    def forward_simulate(self, ego: VehicleBase, other: VehicleBase, traj):
         mcts = MonteCarloTreeSearch(ego, other, self.env, traj, 10000, self.dt)
         current_node = Node(ego.x, ego.y, ego.yaw, ego.v)
         current_node = mcts.excute(current_node)
@@ -191,6 +192,8 @@ class KLevelPlanner:
 
         if len(expected_traj) < self.steps + 1:
             last_expected_pos = expected_traj[-1]
+            logging.debug(f"The max level of the node is not enough{len(expected_traj)},"
+                          f"using the last value to complete it.")
             for _ in range(self.steps + 1 - len(expected_traj)):
                 expected_traj.append(last_expected_pos)
 
@@ -202,10 +205,10 @@ class KLevelPlanner:
             return [[other.x, other.y]] * (self.steps + 1)
         elif ego.level == 1:
             other_prediction_ego = [[ego.x, ego.y]] * (self.steps + 1)
-            other_act, other_traj = self.helper(other, ego, other_prediction_ego)
+            other_act, other_traj = self.forward_simulate(other, ego, other_prediction_ego)
             return other_traj
         elif ego.level == 2:
             static_traj = [[other.x, other.y]] * (self.steps + 1)
-            _, ego_l0_traj = self.helper(ego, other, static_traj)
-            _, other_l1_traj = self.helper(other, ego, ego_l0_traj)
+            _, ego_l0_traj = self.forward_simulate(ego, other, static_traj)
+            _, other_l1_traj = self.forward_simulate(other, ego, ego_l0_traj)
             return other_l1_traj

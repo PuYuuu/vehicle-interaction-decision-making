@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -34,18 +35,18 @@ class Vehicle(VehicleBase):
         if level >= 0 and level < 3:
             self.level = level
         else:
-            print("set_level error, the level must be >= 0 and > 3 !")
+            logging.CRITICAL("set_level error, the level must be >= 0 and > 3 !")
 
 
     def set_target(self, target):
         if len(target) != 3:
-            print("set_target error, the target len must equal 3 !")
+            logging.CRITICAL("set_target error, the target len must equal 3 !")
             return
 
         if target[0] >= -25 and target[0] <= 25 and target[1] >= -25 and target[1] <= 25:
             self.target = target
         else:
-            print("set_target error, the target range must >= -25 and <= 25 !")
+            logging.CRITICAL("set_target error, the target range must >= -25 and <= 25 !")
 
 
     def get_box2d(self, tar_offset = None):
