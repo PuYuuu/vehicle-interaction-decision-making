@@ -14,10 +14,10 @@ from env import EnvCrossroads
 from vehicle import Vehicle
 
 DT = 0.25
-LOG_LEVEL_DICT = {0:logging.DEBUG, 1:logging.INFO, 2:logging.WARNING,
-                  3:logging.ERROR, 4:logging.CRITICAL}
+LOG_LEVEL_DICT = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING,
+                  3: logging.ERROR, 4: logging.CRITICAL}
 
-def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
+def run(rounds_num:int, save_path:str, show_animation:bool, save_fig:bool) -> None:
     logging.info(f"rounds_num: {rounds_num}")
     env = EnvCrossroads(size=25, lanewidth=4.2)
     max_per_iters = 25 / DT
@@ -105,7 +105,8 @@ def run(rounds_num:int, save_path:str, show_animation:bool) -> None:
         plt.xlim(-25, 25)
         plt.ylim(-25, 25)
         plt.gca().set_aspect('equal')
-        plt.savefig(os.path.join(save_path, f"round_{iter}.svg"), format='svg', dpi=600)
+        if save_fig:
+            plt.savefig(os.path.join(save_path, f"round_{iter}.svg"), format='svg', dpi=600)
 
     print("\n=========================================")
     logging.info(f"Experiment success {succeed_count}/{rounds_num}"
@@ -121,21 +122,23 @@ if __name__ == "__main__":
                              f"2:logging.WARNING\t3:logging.ERROR\t"
                              f"4:logging.CRITICAL\t")
     parser.add_argument('--show', action='store_true', default=False, help='')
+    parser.add_argument('--save_fig', action='store_true', default=False, help='')
     args = parser.parse_args()
-    print(LOG_LEVEL_DICT)
+
     if args.output_path is None:
         current_file_path = os.path.abspath(__file__)
         args.output_path = os.path.dirname(current_file_path)
 
     logging.basicConfig(level=LOG_LEVEL_DICT[args.log_level],
-                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s',
                         handlers=[logging.StreamHandler()])
     logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
     current_time = datetime.now()
     formatted_time = current_time.strftime("%Y-%m-%d-%H-%M-%S")
     result_save_path = os.path.join(args.output_path, "logs", formatted_time)
-    os.makedirs(result_save_path, exist_ok=True)
-    logging.info(f"Experiment results save at \"{result_save_path}\"")
+    if args.save_fig:
+        os.makedirs(result_save_path, exist_ok=True)
+        logging.info(f"Experiment results save at \"{result_save_path}\"")
 
-    run(args.rounds, result_save_path, args.show)
+    run(args.rounds, result_save_path, args.show, args.save_fig)

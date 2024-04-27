@@ -2,6 +2,7 @@ import math
 import random
 import logging
 import numpy as np
+from typing import Tuple, List
 
 import utils
 from utils import Node
@@ -28,9 +29,9 @@ class MonteCarloTreeSearch:
         self.other_predict_traj = other_traj
         self.computation_budget = budget
         self.dt = dt
+        Node.set_callback(self.calc_cur_value)
 
-    def excute(self, root: Node):
-
+    def excute(self, root: Node) -> Node:
         for _ in range(self.computation_budget):
             # 1. Find the best node to expand
             expand_node = self.tree_policy(root)
@@ -41,7 +42,7 @@ class MonteCarloTreeSearch:
 
         return self.get_best_child(root, 0)
 
-    def tree_policy(self, node: Node):
+    def tree_policy(self, node: Node) -> Node:
         while node.is_terminal == False:
             if len(node.children) == 0:
                 return self.expand(node)
@@ -55,31 +56,29 @@ class MonteCarloTreeSearch:
 
         return node
 
-    def default_policy(self, node: Node):
+    def default_policy(self, node: Node) -> float:
         while node.is_terminal == False:
             next_node = node.next_node(self.dt)
-            self.calc_cur_value(next_node, node.value)
             node = next_node
 
         return node.value
 
-    def backup(self, node: Node, r: float):
+    def backup(self, node: Node, r: float) -> None:
         while node != None:
             node.visits += 1
             node.reward += r
             node = node.parent
 
-    def expand(self, node: utils.Node) -> utils.Node:
+    def expand(self, node: Node) -> Node:
         tried_actions = [c.action for c in node.children]
         next_action = random.choice(utils.ActionList)
         while node.is_terminal == False and next_action in tried_actions:
             next_action = random.choice(utils.ActionList)
         node.add_child(next_action, self.dt)
-        self.calc_cur_value(node.children[-1], node.value)
 
         return node.children[-1]
 
-    def get_best_child(self, node: Node, scalar: float) -> utils.Node:
+    def get_best_child(self, node: Node, scalar: float) -> Node:
         bestscore = -math.inf
         bestchildren = []
         for c in node.children:
@@ -135,7 +134,7 @@ class MonteCarloTreeSearch:
 
         return total_reward
 
-    def is_opposite_direction(self, x, y, yaw, ego_box2d):
+    def is_opposite_direction(self, x, y, yaw, ego_box2d) -> bool:
         for laneline in self.env.laneline:
             if utils.has_overlap(ego_box2d, laneline):
                 return True
@@ -168,15 +167,13 @@ class KLevelPlanner:
         self.steps = steps
         self.dt = dt
 
-
-    def planning(self, ego:VehicleBase, other:VehicleBase):
+    def planning(self, ego: VehicleBase, other: VehicleBase) -> Tuple[utils.Action, List]:
         other_prediction = self.get_prediction(ego, other)
         actions, traj = self.forward_simulate(ego, other, other_prediction)
 
         return actions[0], traj
 
-
-    def forward_simulate(self, ego: VehicleBase, other: VehicleBase, traj):
+    def forward_simulate(self, ego: VehicleBase, other: VehicleBase, traj) -> Tuple[List[utils.Action], List]:
         mcts = MonteCarloTreeSearch(ego, other, self.env, traj, 10000, self.dt)
         current_node = Node(ego.x, ego.y, ego.yaw, ego.v)
         current_node = mcts.excute(current_node)
@@ -192,15 +189,14 @@ class KLevelPlanner:
 
         if len(expected_traj) < self.steps + 1:
             last_expected_pos = expected_traj[-1]
-            logging.debug(f"The max level of the node is not enough{len(expected_traj)},"
+            logging.debug(f"The max level of the node is not enough({len(expected_traj)}),"
                           f"using the last value to complete it.")
             for _ in range(self.steps + 1 - len(expected_traj)):
                 expected_traj.append(last_expected_pos)
 
         return actions, expected_traj
 
-
-    def get_prediction(self, ego: VehicleBase, other: VehicleBase):
+    def get_prediction(self, ego: VehicleBase, other: VehicleBase) -> List:
         if ego.level == 0 or other.is_get_target:
             return [[other.x, other.y]] * (self.steps + 1)
         elif ego.level == 1:

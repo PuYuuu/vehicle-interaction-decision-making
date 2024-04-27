@@ -26,7 +26,6 @@ class EnvCrossroads:
             [[size, 2*lanewidth], [0, 0]]
         ]
 
-
     def draw_env(self):
         for i in range(len(self.rect)):
             plt.fill(*self.rect[i], color='gray', alpha=0.5)

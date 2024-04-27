@@ -1,9 +1,9 @@
-import numpy as np
-from typing import List
-from typing import Optional
-from enum import Enum
 import math
 import random
+import numpy as np
+from enum import Enum
+from typing import List, Optional, Tuple
+
 
 class Action(Enum):
     """Enum of action sets for vehicle."""
@@ -19,6 +19,7 @@ ActionList = [Action.MAINTAIN, Action.TURNLEFT, Action.TURNRIGHT,
 
 class Node:
     MAX_LEVEL: int = 6
+    calc_value_callback = None
 
     def __init__(self, x = 0, y = 0, yaw = 0, v = 0, level = 0,
                  p: Optional["Node"] = None, action: Optional[Action] = None):
@@ -53,19 +54,25 @@ class Node:
         node = Node(x, y, yaw, v, self.cur_level + 1, self, next_action)
         node.actions = self.actions + [next_action]
         self.children.append(node)
+        Node.calc_value_callback(node, self.value)
 
         return node
 
-    def next_node(self, delta_t: float):
+    def next_node(self, delta_t: float) -> "Node":
         next_action = random.choice(ActionList)
         x, y, yaw, v = kinematic_propagate(self, next_action.value, delta_t)
         node = Node(x, y, yaw, v, self.cur_level + 1, None, next_action)
+        Node.calc_value_callback(node, self.value)
 
         return node
 
+    @staticmethod
+    def set_callback(func) -> None:
+        Node.calc_value_callback = func
+
     def __repr__(self):
-        return f"children: {len(self.children)}, visits: {self.visits}, \
-                reward: {self.reward}, actions: {self.actions}"
+        return (f"children: {len(self.children)}, visits: {self.visits}, "
+                f"reward: {self.reward}, actions: {self.actions}")
 
 def has_overlap(box2d_0, box2d_1) -> bool:
     total_sides = []
@@ -101,7 +108,7 @@ def has_overlap(box2d_0, box2d_1) -> bool:
     return True
 
 
-def kinematic_propagate(node: Node, act: List[float], dt: float):
+def kinematic_propagate(node: Node, act: List[float], dt: float) -> Tuple:
     acc, omega = act[0], act[1]
 
     x = node.x + node.v * np.cos(node.yaw) * dt

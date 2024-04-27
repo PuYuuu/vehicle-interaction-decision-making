@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Tuple, List
 
 import utils
 from vehicle_base import VehicleBase
@@ -10,16 +11,7 @@ from planner import KLevelPlanner
 class Vehicle(VehicleBase):
     def __init__(self, name, x, y, yaw, env = None, dt = 0.1, color = 'k', length = 5,
                  width = 2, safe_length = 8, safe_width = 2.4):
-        self.name = name
-        self.x = x
-        self.y = y
-        self.yaw = yaw
-        self.v = 0
-        self.length = length
-        self.width = width
-        self.color = color
-        self.safe_length = safe_length
-        self.safe_width = safe_width
+        super().__init__(name, x, y, yaw, color, length, width, safe_length, safe_width)
         self.vehicle_box2d = self.get_box2d()
         self.safezone = self.get_safezone()
         self.level = 0
@@ -30,15 +22,13 @@ class Vehicle(VehicleBase):
         self.env = env
         self.planner = KLevelPlanner(env, 6, self.dt)
 
-
-    def set_level(self, level):
+    def set_level(self, level) -> None:
         if level >= 0 and level < 3:
             self.level = level
         else:
             logging.CRITICAL("set_level error, the level must be >= 0 and > 3 !")
 
-
-    def set_target(self, target):
+    def set_target(self, target) -> None:
         if len(target) != 3:
             logging.CRITICAL("set_target error, the target len must equal 3 !")
             return
@@ -49,7 +39,7 @@ class Vehicle(VehicleBase):
             logging.CRITICAL("set_target error, the target range must >= -25 and <= 25 !")
 
 
-    def get_box2d(self, tar_offset = None):
+    def get_box2d(self, tar_offset = None) -> np.ndarray:
         vehicle = np.array(
             [[-self.length/2, self.length/2, self.length/2, -self.length/2, -self.length/2],
             [self.width/2, self.width/2, -self.width/2, -self.width/2, self.width/2]]
@@ -65,8 +55,7 @@ class Vehicle(VehicleBase):
 
         return vehicle
 
-
-    def get_safezone(self, tar_offset = None):
+    def get_safezone(self, tar_offset = None) -> np.ndarray:
         safezone = np.array(
             [[-self.safe_length/2, self.safe_length/2, self.safe_length/2, -self.safe_length/2, -self.safe_length/2],
             [self.safe_width/2, self.safe_width/2, -self.safe_width/2, -self.safe_width/2, self.safe_width/2]]
@@ -82,8 +71,7 @@ class Vehicle(VehicleBase):
 
         return safezone
 
-
-    def excute(self, other:VehicleBase):
+    def excute(self, other:VehicleBase) -> Tuple[utils.Action, List]:
         act, excepted_traj = self.planner.planning(self, other)
         acc, omega = act.value[0], act.value[1]
 
@@ -99,8 +87,7 @@ class Vehicle(VehicleBase):
 
         return act, excepted_traj
 
-
-    def draw_vehicle(self, fill_mode = False):
+    def draw_vehicle(self, fill_mode = False) -> None:
         head = np.array(
             [[0.3 * self.length, 0.3 * self.length], [self.width/2, -self.width/2]]
         )
@@ -117,7 +104,6 @@ class Vehicle(VehicleBase):
         else:
             plt.fill(self.vehicle_box2d[0, :], self.vehicle_box2d[1, :], color=self.color, alpha=0.5)
 
-
     @property
-    def is_get_target(self):
+    def is_get_target(self) -> bool:
         return self.have_got_target
