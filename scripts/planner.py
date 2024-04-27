@@ -8,25 +8,26 @@ import utils
 from utils import Node
 from vehicle_base import VehicleBase
 
-LAMDA = 0.9
-WEIGHT_AVOID = 10
-WEIGHT_SAFE = 0.2
-WEIGHT_OFFROAD = 2
-WEIGHT_VELOCITY = 10
-WEIGHT_DIRECTION = 1
-WEIGHT_DISTANCE = 0.1
-
 
 class MonteCarloTreeSearch:
     EXPLORATE_RATE = 1 / ( 2 * math.sqrt(2.0))
+    LAMDA = 0.9
+    WEIGHT_AVOID = 10
+    WEIGHT_SAFE = 0.2
+    WEIGHT_OFFROAD = 2
+    WEIGHT_VELOCITY = 10
+    WEIGHT_DIRECTION = 1
+    WEIGHT_DISTANCE = 0.1
 
     def __init__(self, ego: VehicleBase, other: VehicleBase,
-                 other_traj, budget: int = 1000, dt: float = 0.1):
+                 other_traj, cfg: dict = {}):
         self.ego_vehicle = ego
         self.other_vehicle = other
         self.other_predict_traj = other_traj
-        self.computation_budget = budget
-        self.dt = dt
+        
+        self.computation_budget = cfg['computation_budget']
+        self.dt = cfg['delta_t']
+        
 
     def excute(self, root: Node) -> Node:
         for _ in range(self.computation_budget):
@@ -129,11 +130,14 @@ class MonteCarloTreeSearch:
         distance = -(abs(x - node.goal_pos.x) + abs(y - node.goal_pos.y) + \
                      1.5 * abs(yaw - node.goal_pos.yaw))
 
-        cur_reward = WEIGHT_AVOID * avoid +  WEIGHT_SAFE * safe + \
-                     WEIGHT_OFFROAD * offroad + WEIGHT_DISTANCE * distance + \
-                     WEIGHT_DIRECTION * direction + WEIGHT_VELOCITY * velocity
+        cur_reward = MonteCarloTreeSearch.WEIGHT_AVOID * avoid + \
+                     MonteCarloTreeSearch.WEIGHT_SAFE * safe + \
+                     MonteCarloTreeSearch.WEIGHT_OFFROAD * offroad + \
+                     MonteCarloTreeSearch.WEIGHT_DISTANCE * distance + \
+                     MonteCarloTreeSearch.WEIGHT_DIRECTION * direction + \
+                     MonteCarloTreeSearch.WEIGHT_VELOCITY * velocity
 
-        total_reward = last_node_value + LAMDA ** (step - 1) * cur_reward
+        total_reward = last_node_value + MonteCarloTreeSearch.LAMDA ** (step - 1) * cur_reward
         node.value = total_reward
 
         return total_reward
@@ -169,11 +173,21 @@ class MonteCarloTreeSearch:
 
         return False
 
+    @staticmethod
+    def initialize(cfg: dict = {}) -> None:
+        MonteCarloTreeSearch.LAMDA = cfg['lamda']
+        MonteCarloTreeSearch.WEIGHT_AVOID = cfg['weight_avoid']
+        MonteCarloTreeSearch.WEIGHT_SAFE = cfg['weight_safe']
+        MonteCarloTreeSearch.WEIGHT_OFFROAD = cfg['weight_offroad']
+        MonteCarloTreeSearch.WEIGHT_VELOCITY = cfg['weight_velocity']
+        MonteCarloTreeSearch.WEIGHT_DIRECTION = cfg['weight_direction']
+        MonteCarloTreeSearch.WEIGHT_DISTANCE = cfg['weight_distance']
 
 class KLevelPlanner:
-    def __init__(self, steps: int = 6, dt: float = 0.1):
-        self.steps = steps
-        self.dt = dt
+    def __init__(self, cfg: dict = {}):
+        self.steps = cfg['max_step']
+        self.dt = cfg['delta_t']
+        self.config = cfg
 
     def planning(self, ego: VehicleBase, other: VehicleBase) -> Tuple[utils.Action, List]:
         other_prediction = self.get_prediction(ego, other)
@@ -182,7 +196,7 @@ class KLevelPlanner:
         return actions[0], traj
 
     def forward_simulate(self, ego: VehicleBase, other: VehicleBase, traj) -> Tuple[List[utils.Action], List]:
-        mcts = MonteCarloTreeSearch(ego, other, traj, 10000, self.dt)
+        mcts = MonteCarloTreeSearch(ego, other, traj, self.config)
         current_node = Node(state = ego.state, goal = ego.target)
         current_node = mcts.excute(current_node)
         for _ in range(Node.MAX_LEVEL - 1):

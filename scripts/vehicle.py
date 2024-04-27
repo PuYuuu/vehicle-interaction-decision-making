@@ -9,16 +9,16 @@ from planner import KLevelPlanner
 
 
 class Vehicle(VehicleBase):
-    def __init__(self, name, state, dt = 0.1, color = 'k'):
+    def __init__(self, name, state, color = 'k', cfg: dict = {}):
         super().__init__(name, state, color)
         self.vehicle_box2d = VehicleBase.get_box2d(self.state)
         self.safezone = VehicleBase.get_safezone(self.state)
         self.level = 0
         self.target = utils.State(0, 0, 0, 0)
         self.have_got_target = False
-        self.dt = dt
+        self.dt = cfg['delta_t']
 
-        self.planner = KLevelPlanner(6, self.dt)
+        self.planner = KLevelPlanner(cfg)
 
     def set_level(self, level) -> None:
         if level >= 0 and level < 3:

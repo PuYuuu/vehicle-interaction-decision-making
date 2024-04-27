@@ -1,0 +1,13 @@
+delta_t: 0.25
+
+max_step: 6
+
+# mcts parameters
+computation_budget: 10000
+lamda: 0.9
+weight_avoid: 10
+weight_safe: 0.2
+weight_offroad: 2
+weight_velocity: 10
+weight_direction: 1
+weight_distance: 0.1

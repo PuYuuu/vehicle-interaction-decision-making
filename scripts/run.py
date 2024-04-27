@@ -1,6 +1,7 @@
 import os
 import math
 import time
+import yaml
 import random
 import logging
 import argparse
@@ -16,18 +17,22 @@ from vehicle_base import VehicleBase
 from vehicle import Vehicle
 from planner import MonteCarloTreeSearch
 
-DT = 0.25
 LOG_LEVEL_DICT = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING,
                   3: logging.ERROR, 4: logging.CRITICAL}
 
-def run(rounds_num:int, save_path:str, show_animation:bool, save_fig:bool) -> None:
+def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, save_fig:bool) -> None:
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+        print("Config parameters:\n", config)
+
     logging.info(f"rounds_num: {rounds_num}")
     env = EnvCrossroads(size = 25, lanewidth = 4.2)
-    max_per_iters = 20 / DT
+    max_per_iters = 20 / config['delta_t']
 
     # initialize
     VehicleBase.initialize(env, 5, 2, 8, 2.4)
-    Node.initialize(6, MonteCarloTreeSearch.calc_cur_value)
+    MonteCarloTreeSearch.initialize(config)
+    Node.initialize(config['max_step'], MonteCarloTreeSearch.calc_cur_value)
 
     succeed_count = 0
     for iter in range(rounds_num):
@@ -37,9 +42,11 @@ def run(rounds_num:int, save_path:str, show_animation:bool, save_fig:bool) -> No
         init_v_1 = random.uniform(3, 5)
 
         # the turn left vehicle
-        vehicle_0 = Vehicle("vehicle_0", State(env.lanewidth / 2, init_y_0, np.pi / 2, init_v_0), DT, 'blue')
+        vehicle_0 = \
+            Vehicle("vehicle_0", State(env.lanewidth / 2, init_y_0, np.pi / 2, init_v_0), 'blue', config)
         # the straight vehicle
-        vehicle_1 = Vehicle("vehicle_1", State(-env.lanewidth / 2, init_y_1, -np.pi / 2, init_v_1), DT, 'red')
+        vehicle_1 = \
+            Vehicle("vehicle_1", State(-env.lanewidth / 2, init_y_1, -np.pi / 2, init_v_1), 'red', config)
 
         vehicle_0.set_level(1)
         vehicle_1.set_level(0)
@@ -60,7 +67,8 @@ def run(rounds_num:int, save_path:str, show_animation:bool, save_fig:bool) -> No
         while True:
             if vehicle_0.is_get_target and vehicle_1.is_get_target:
                 round_elapsed_time = time.time() - round_start_time
-                logging.info(f"Round {iter} successed, simulation time: {cur_loop_count * DT} s"
+                logging.info(f"Round {iter} successed, "
+                             f"simulation time: {cur_loop_count * config['delta_t']} s"
                              f", actual timecost: {round_elapsed_time:.3f} s")
                 succeed_count += 1
                 break
@@ -69,7 +77,8 @@ def run(rounds_num:int, save_path:str, show_animation:bool, save_fig:bool) -> No
                            VehicleBase.get_box2d(vehicle_0.state)) or \
                            cur_loop_count > max_per_iters:
                 round_elapsed_time = time.time() - round_start_time
-                logging.info(f"Round {iter} failed, simulation time: {cur_loop_count * DT} s"
+                logging.info(f"Round {iter} failed, "
+                             f"simulation time: {cur_loop_count * config['delta_t']} s"
                              f", actual timecost: {round_elapsed_time:.3f} s")
                 break
 
@@ -108,10 +117,10 @@ def run(rounds_num:int, save_path:str, show_animation:bool, save_fig:bool) -> No
         plt.cla()
         env.draw_env()
         for history in vehicle_0_history:
-            tmp = Vehicle("tmp", history, DT, "blue")
+            tmp = Vehicle("tmp", history, "blue", config)
             tmp.draw_vehicle(True)
         for history in vehicle_1_history:
-            tmp = Vehicle("tmp", history, DT, "red")
+            tmp = Vehicle("tmp", history, "red", config)
             tmp.draw_vehicle(True)
         plt.xlim(-25, 25)
         plt.ylim(-25, 25)
@@ -132,6 +141,7 @@ if __name__ == "__main__":
                         help=f"0:logging.DEBUG\t1:logging.INFO\t"
                              f"2:logging.WARNING\t3:logging.ERROR\t"
                              f"4:logging.CRITICAL\t")
+    parser.add_argument('--config', '-c', type=str, default='default.yaml', help='')
     parser.add_argument('--show', action='store_true', default=False, help='')
     parser.add_argument('--save_fig', action='store_true', default=False, help='')
     args = parser.parse_args()
@@ -152,4 +162,7 @@ if __name__ == "__main__":
         os.makedirs(result_save_path, exist_ok=True)
         logging.info(f"Experiment results save at \"{result_save_path}\"")
 
-    run(args.rounds, result_save_path, args.show, args.save_fig)
+    project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    config_file_path = os.path.join(project_path, 'config', args.config)
+
+    run(args.rounds, config_file_path, result_save_path, args.show, args.save_fig)
