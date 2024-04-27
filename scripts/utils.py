@@ -7,26 +7,36 @@ from typing import List, Optional, Tuple
 
 class Action(Enum):
     """Enum of action sets for vehicle."""
-    MAINTAIN = [0, 0]              # 'maintain'
-    TURNLEFT = [0, math.pi / 4]    # 'turn left'
-    TURNRIGHT = [0, -math.pi / 4]  # 'turn right'
-    ACCELERATE = [2.5, 0]          # 'accelerate'
-    DECELERATE = [-2.5, 0]         # 'decelerate'
-    BRAKE = [-5, 0]                # 'brake'
+    MAINTAIN = [0, 0]              # maintain
+    TURNLEFT = [0, math.pi / 4]    # turn left
+    TURNRIGHT = [0, -math.pi / 4]  # turn right
+    ACCELERATE = [2.5, 0]          # accelerate
+    DECELERATE = [-2.5, 0]         # decelerate
+    BRAKE = [-5, 0]                # brake
 
 ActionList = [Action.MAINTAIN, Action.TURNLEFT, Action.TURNRIGHT,
               Action.ACCELERATE, Action.DECELERATE, Action.BRAKE]
+
+
+class State:
+    def __init__(self, x=0, y=0, yaw=0, v=0) -> None:
+        self.x = x
+        self.y = y
+        self.yaw = yaw
+        self.v = v
+
+    def to_list(self) -> List:
+        return [self.x, self.y, self.yaw, self.v]
+
 
 class Node:
     MAX_LEVEL: int = 6
     calc_value_callback = None
 
-    def __init__(self, x = 0, y = 0, yaw = 0, v = 0, level = 0,
-                 p: Optional["Node"] = None, action: Optional[Action] = None):
-        self.x = x
-        self.y = y
-        self.yaw = yaw
-        self.v = v
+    def __init__(self, state = State(), level = 0, p: Optional["Node"] = None,
+                 action: Optional[Action] = None, others: List[State] = [],
+                 goal: State = State()):
+        self.state: State = state
 
         self.value: float = 0
         self.reward: float = 0
@@ -34,9 +44,11 @@ class Node:
         self.action: Action = action
         self.parent: Node = p
         self.cur_level: int = level
+        self.goal_pos: State = goal
 
         self.children: List[Node] = []
         self.actions: List[Action] = []
+        self.other_agent_state: List[State] = others
 
     @property
     def is_terminal(self) -> bool:
@@ -49,30 +61,32 @@ class Node:
 
         return False
 
-    def add_child(self, next_action: Action, delta_t: float) -> "Node":
-        x, y, yaw, v = kinematic_propagate(self, next_action.value, delta_t)
-        node = Node(x, y, yaw, v, self.cur_level + 1, self, next_action)
-        node.actions = self.actions + [next_action]
-        self.children.append(node)
-        Node.calc_value_callback(node, self.value)
-
-        return node
-
-    def next_node(self, delta_t: float) -> "Node":
-        next_action = random.choice(ActionList)
-        x, y, yaw, v = kinematic_propagate(self, next_action.value, delta_t)
-        node = Node(x, y, yaw, v, self.cur_level + 1, None, next_action)
-        Node.calc_value_callback(node, self.value)
-
-        return node
-
     @staticmethod
-    def set_callback(func) -> None:
-        Node.calc_value_callback = func
+    def initialize(max_level, callback) -> None:
+        Node.MAX_LEVEL = max_level
+        Node.calc_value_callback = callback
+
+    def add_child(self, next_action: Action, delta_t: float, others: List[State] = []) -> "Node":
+        new_state = kinematic_propagate(self.state, next_action.value, delta_t)
+        node = Node(new_state, self.cur_level + 1, self, next_action, others, self.goal_pos)
+        node.actions = self.actions + [next_action]
+        Node.calc_value_callback(node, self.value)
+        self.children.append(node)
+
+        return node
+
+    def next_node(self, delta_t: float, others: List[State] = []) -> "Node":
+        next_action = random.choice(ActionList)
+        new_state = kinematic_propagate(self.state, next_action.value, delta_t)
+        node = Node(new_state, self.cur_level + 1, None, next_action, others, self.goal_pos)
+        Node.calc_value_callback(node, self.value)
+
+        return node
 
     def __repr__(self):
         return (f"children: {len(self.children)}, visits: {self.visits}, "
                 f"reward: {self.reward}, actions: {self.actions}")
+
 
 def has_overlap(box2d_0, box2d_1) -> bool:
     total_sides = []
@@ -108,22 +122,23 @@ def has_overlap(box2d_0, box2d_1) -> bool:
     return True
 
 
-def kinematic_propagate(node: Node, act: List[float], dt: float) -> Tuple:
+def kinematic_propagate(state: State, act: List[float], dt: float) -> State:
+    next_state = State()
     acc, omega = act[0], act[1]
 
-    x = node.x + node.v * np.cos(node.yaw) * dt
-    y = node.y + node.v * np.sin(node.yaw) * dt
-    v = node.v + acc * dt
-    yaw = node.yaw + omega * dt
+    next_state.x = state.x + state.v * np.cos(state.yaw) * dt
+    next_state.y = state.y + state.v * np.sin(state.yaw) * dt
+    next_state.v = state.v + acc * dt
+    next_state.yaw = state.yaw + omega * dt
 
-    if yaw > 2 * np.pi:
-        yaw -= 2 * np.pi
-    if yaw < 0:
-        yaw += 2 * np.pi
+    if next_state.yaw > 2 * np.pi:
+        next_state.yaw -= 2 * np.pi
+    if next_state.yaw < 0:
+        next_state.yaw += 2 * np.pi
 
-    if v > 20:
-        v = 20
-    elif v < -20:
-        v = -20
+    if next_state.v > 20:
+        next_state.v = 20
+    elif next_state.v < -20:
+        next_state.v = -20
 
-    return x, y, yaw, v
+    return next_state
