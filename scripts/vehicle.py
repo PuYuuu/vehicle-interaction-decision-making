@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+from copy import deepcopy
 from typing import Tuple, List
 
 import utils
@@ -32,18 +33,14 @@ class Vehicle(VehicleBase):
         else:
             logging.CRITICAL("set_target error, the target range must >= -25 and <= 25 !")
 
-
-    def excute(self, other:VehicleBase) -> Tuple[utils.Action, List]:
-        act, excepted_traj = self.planner.planning(self, other)
-        acc, omega = act.value[0], act.value[1]
-
-        # update ego
-        self.state = utils.kinematic_propagate(self.state, [acc, omega], self.dt)
-
-        if ((self.state.x - self.target.x) ** 2 + (self.state.y - self.target.y) ** 2) < 3:
+    def excute(self, other: VehicleBase) -> Tuple[utils.Action, List]:
+        if self.is_get_target:
             self.have_got_target = True
             self.state.v = 0
             excepted_traj = []
+            act = utils.Action.MAINTAIN
+        else:
+            act, excepted_traj = self.planner.planning(self, other)
 
         return act, excepted_traj
 
@@ -67,4 +64,5 @@ class Vehicle(VehicleBase):
 
     @property
     def is_get_target(self) -> bool:
-        return self.have_got_target
+        return self.have_got_target or \
+               ((self.state.x - self.target.x) ** 2 + (self.state.y - self.target.y) ** 2) < 3

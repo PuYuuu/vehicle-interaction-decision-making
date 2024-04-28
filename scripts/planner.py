@@ -183,6 +183,7 @@ class MonteCarloTreeSearch:
         MonteCarloTreeSearch.WEIGHT_DIRECTION = cfg['weight_direction']
         MonteCarloTreeSearch.WEIGHT_DISTANCE = cfg['weight_distance']
 
+
 class KLevelPlanner:
     def __init__(self, cfg: dict = {}):
         self.steps = cfg['max_step']

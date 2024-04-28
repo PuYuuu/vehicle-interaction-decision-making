@@ -7,11 +7,12 @@ import logging
 import argparse
 from datetime import datetime
 from typing import List
+from concurrent.futures import ProcessPoolExecutor, Future
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import Node, State, has_overlap
+from utils import Node, State, has_overlap, kinematic_propagate
 from env import EnvCrossroads
 from vehicle_base import VehicleBase
 from vehicle import Vehicle
@@ -35,6 +36,7 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
     Node.initialize(config['max_step'], MonteCarloTreeSearch.calc_cur_value)
 
     succeed_count = 0
+    executor = ProcessPoolExecutor(max_workers = 6)
     for iter in range(rounds_num):
         init_y_0 = random.uniform(-20, -12)
         init_y_1 = random.uniform(12, 20)
@@ -52,7 +54,7 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
         vehicle_1.set_level(0)
         vehicle_0.set_target(State(-18, env.lanewidth / 2, math.pi))
         vehicle_1.set_target(State(-env.lanewidth / 2, -18, 1.5 * math.pi))
-
+        print(f"vehicle_1 tar: {vehicle_1.target.x}, {vehicle_1.target.y}")
         vehicle_0_history: List[State] = [vehicle_0.state]
         vehicle_1_history: List[State] = [vehicle_1.state]
 
@@ -82,14 +84,23 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
                              f", actual timecost: {round_elapsed_time:.3f} s")
                 break
 
+            future_list: List[Future] = []
             start_time = time.time()
+
+            future = executor.submit(vehicle_0.excute, vehicle_1)
+            future_list.append(future)
+            future = executor.submit(vehicle_1.excute, vehicle_0)
+            future_list.append(future)
+
+            act_0, excepted_traj_0 = future_list[0].result()
             if not vehicle_0.is_get_target:
-                act_0, excepted_traj_0 = vehicle_0.excute(vehicle_1)
-                vehicle_0_history.append(vehicle_0.state)
- 
+                vehicle_0.state = kinematic_propagate(vehicle_0.state, act_0.value, config['delta_t'])
+            act_1, excepted_traj_1 = future_list[1].result()
             if not vehicle_1.is_get_target:
-                act_1, excepted_traj_1 = vehicle_1.excute(vehicle_0)
-                vehicle_1_history.append(vehicle_1.state)
+                vehicle_1.state = kinematic_propagate(vehicle_1.state, act_1.value, config['delta_t'])
+            vehicle_0_history.append(vehicle_0.state)
+            vehicle_1_history.append(vehicle_1.state)
+
             elapsed_time = time.time() - start_time
             logging.debug(f"single step cost {elapsed_time:.6f} second")
 
@@ -99,11 +110,13 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
                 vehicle_0.draw_vehicle()
                 vehicle_1.draw_vehicle()
                 plt.plot(vehicle_0.target.x, vehicle_0.target.y, "xb")
-                plt.plot(vehicle_1.target.y, vehicle_1.target.y, "xr")
+                plt.plot(vehicle_1.target.x, vehicle_1.target.y, "xr")
                 plt.text(10, -15, f"v = {vehicle_0.state.v:.2f} m/s", color='blue')
                 plt.text(10,  15, f"v = {vehicle_1.state.v:.2f} m/s", color='red')
-                plt.text(10, -18, act_0.name, fontsize=10, color='blue')
-                plt.text(10,  12, act_1.name, fontsize=10, color='red')
+                action_text = "GOAL !" if vehicle_0.is_get_target else act_0.name
+                plt.text(10, -18, action_text, fontsize=10, color='blue')
+                action_text = "GOAL !" if vehicle_1.is_get_target else act_1.name
+                plt.text(10, 12, action_text, fontsize=10, color='red')
                 plt.plot([traj[0] for traj in excepted_traj_0[1:]],
                          [traj[1] for traj in excepted_traj_0[1:]], color='blue', linewidth=1)
                 plt.plot([traj[0] for traj in excepted_traj_1[1:]],
