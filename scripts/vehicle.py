@@ -1,7 +1,6 @@
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
-from copy import deepcopy
 from typing import Tuple, List
 
 import utils
