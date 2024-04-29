@@ -12,14 +12,16 @@ from concurrent.futures import ProcessPoolExecutor, Future
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import Node, State, has_overlap, kinematic_propagate
+from utils import Node, State, kinematic_propagate
 from env import EnvCrossroads
 from vehicle_base import VehicleBase
-from vehicle import Vehicle
+from vehicle import Vehicle, VehicleList
 from planner import MonteCarloTreeSearch
+
 
 LOG_LEVEL_DICT = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING,
                   3: logging.ERROR, 4: logging.CRITICAL}
+
 
 def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, save_fig:bool) -> None:
     with open(config_path, 'r') as file:
@@ -45,29 +47,30 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
 
         # the turn left vehicle
         vehicle_0 = \
-            Vehicle("vehicle_0", State(env.lanewidth / 2, init_y_0, np.pi / 2, init_v_0), 'blue', config)
+            Vehicle("vehicle_0", State(env.lanewidth / 2, init_y_0, np.pi / 2, init_v_0), 'b', config)
         # the straight vehicle
         vehicle_1 = \
-            Vehicle("vehicle_1", State(-env.lanewidth / 2, init_y_1, -np.pi / 2, init_v_1), 'red', config)
+            Vehicle("vehicle_1", State(-env.lanewidth / 2, init_y_1, -np.pi / 2, init_v_1), 'r', config)
 
         vehicle_0.set_level(1)
         vehicle_1.set_level(0)
         vehicle_0.set_target(State(-18, env.lanewidth / 2, math.pi))
         vehicle_1.set_target(State(-env.lanewidth / 2, -18, 1.5 * math.pi))
-        print(f"vehicle_1 tar: {vehicle_1.target.x}, {vehicle_1.target.y}")
-        vehicle_0_history: List[State] = [vehicle_0.state]
-        vehicle_1_history: List[State] = [vehicle_1.state]
+
+        vehicles = VehicleList([vehicle_0, vehicle_1])
+
+        vehicle_0_history: List[State] = [vehicles[0].state]
+        vehicle_1_history: List[State] = [vehicles[1].state]
 
         print(f"\n================== Round {iter} ==================")
-        logging.info(f"Vehicle 0 >>> init_x: {vehicle_0.state.x:.2f}, "
-                     f"init_y: {init_y_0:.2f}, init_v: {init_v_0:.2f}")
-        logging.info(f"Vehicle 1 >>> init_x: {vehicle_1.state.x:.2f}, "
-                     f"init_y: {init_y_1:.2f}, init_v: {init_v_1:.2f}")
+        for vehicle in vehicles:
+            logging.info(f"{vehicle.name} >>> init_x: {vehicle.state.x:.2f}, "
+                         f"init_y: {vehicle.state.y:.2f}, init_v: {vehicle.state.v:.2f}")
 
         cur_loop_count = 0
         round_start_time = time.time()
         while True:
-            if vehicle_0.is_get_target and vehicle_1.is_get_target:
+            if vehicles.is_all_get_target:
                 round_elapsed_time = time.time() - round_start_time
                 logging.info(f"Round {iter} successed, "
                              f"simulation time: {cur_loop_count * config['delta_t']} s"
@@ -75,9 +78,7 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
                 succeed_count += 1
                 break
 
-            if has_overlap(VehicleBase.get_box2d(vehicle_1.state), \
-                           VehicleBase.get_box2d(vehicle_0.state)) or \
-                           cur_loop_count > max_per_iters:
+            if vehicles.is_any_collision or cur_loop_count > max_per_iters:
                 round_elapsed_time = time.time() - round_start_time
                 logging.info(f"Round {iter} failed, "
                              f"simulation time: {cur_loop_count * config['delta_t']} s"
@@ -87,19 +88,18 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
             future_list: List[Future] = []
             start_time = time.time()
 
-            future = executor.submit(vehicle_0.excute, vehicle_1)
-            future_list.append(future)
-            future = executor.submit(vehicle_1.excute, vehicle_0)
-            future_list.append(future)
+            for vehicle in vehicles:
+                future = executor.submit(vehicle.excute, vehicles.exclude(vehicle)[0])
+                future_list.append(future)
 
-            act_0, excepted_traj_0 = future_list[0].result()
-            if not vehicle_0.is_get_target:
-                vehicle_0.state = kinematic_propagate(vehicle_0.state, act_0.value, config['delta_t'])
-            act_1, excepted_traj_1 = future_list[1].result()
-            if not vehicle_1.is_get_target:
-                vehicle_1.state = kinematic_propagate(vehicle_1.state, act_1.value, config['delta_t'])
-            vehicle_0_history.append(vehicle_0.state)
-            vehicle_1_history.append(vehicle_1.state)
+            for vehicle, future in zip(vehicles, future_list):
+                vehicle.cur_action, vehicle.excepted_traj = future.result()
+                if not vehicle.is_get_target:
+                    vehicle.state = \
+                        kinematic_propagate(vehicle.state, vehicle.cur_action.value, config['delta_t'])
+ 
+            vehicle_0_history.append(vehicles[0].state)
+            vehicle_1_history.append(vehicles[1].state)
 
             elapsed_time = time.time() - start_time
             logging.debug(f"single step cost {elapsed_time:.6f} second")
@@ -107,20 +107,17 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
             if show_animation:
                 plt.cla()
                 env.draw_env()
-                vehicle_0.draw_vehicle()
-                vehicle_1.draw_vehicle()
-                plt.plot(vehicle_0.target.x, vehicle_0.target.y, "xb")
-                plt.plot(vehicle_1.target.x, vehicle_1.target.y, "xr")
-                plt.text(10, -15, f"v = {vehicle_0.state.v:.2f} m/s", color='blue')
-                plt.text(10,  15, f"v = {vehicle_1.state.v:.2f} m/s", color='red')
-                action_text = "GOAL !" if vehicle_0.is_get_target else act_0.name
+                for vehicle in vehicles:
+                    vehicle.draw_vehicle()
+                    plt.plot(vehicle.target.x, vehicle.target.y, marker='x', color=vehicle.color)
+                    plt.plot([traj[0] for traj in vehicle.excepted_traj[1:]],
+                             [traj[1] for traj in vehicle.excepted_traj[1:]], color=vehicle.color, linewidth=1)
+                plt.text(10, -15, f"v = {vehicles[0].state.v:.2f} m/s", color='blue')
+                plt.text(10,  15, f"v = {vehicles[1].state.v:.2f} m/s", color='red')
+                action_text = "GOAL !" if vehicles[0].is_get_target else vehicles[0].cur_action.name
                 plt.text(10, -18, action_text, fontsize=10, color='blue')
-                action_text = "GOAL !" if vehicle_1.is_get_target else act_1.name
+                action_text = "GOAL !" if vehicles[1].is_get_target else vehicles[1].cur_action.name
                 plt.text(10, 12, action_text, fontsize=10, color='red')
-                plt.plot([traj[0] for traj in excepted_traj_0[1:]],
-                         [traj[1] for traj in excepted_traj_0[1:]], color='blue', linewidth=1)
-                plt.plot([traj[0] for traj in excepted_traj_1[1:]],
-                         [traj[1] for traj in excepted_traj_1[1:]], color='red', linewidth=1)
                 plt.xlim(-25, 25)
                 plt.ylim(-25, 25)
                 plt.gca().set_aspect('equal')
@@ -161,7 +158,7 @@ if __name__ == "__main__":
 
     if args.output_path is None:
         current_file_path = os.path.abspath(__file__)
-        args.output_path = os.path.dirname(current_file_path)
+        args.output_path = os.path.dirname(os.path.dirname(current_file_path))
 
     logging.basicConfig(level=LOG_LEVEL_DICT[args.log_level],
                         format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s',

@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Tuple, List
+from typing import Tuple, List, Union, Optional
 
 import utils
 from vehicle_base import VehicleBase
@@ -9,14 +9,16 @@ from planner import KLevelPlanner
 
 
 class Vehicle(VehicleBase):
-    def __init__(self, name, state, color = 'k', cfg: dict = {}):
+    def __init__(self, name, state, color = 'k', cfg: dict = {}) -> None:
         super().__init__(name, state, color)
-        self.vehicle_box2d = VehicleBase.get_box2d(self.state)
-        self.safezone = VehicleBase.get_safezone(self.state)
-        self.level = 0
-        self.target = utils.State(0, 0, 0, 0)
-        self.have_got_target = False
-        self.dt = cfg['delta_t']
+        self.vehicle_box2d: np.ndarray = VehicleBase.get_box2d(self.state)
+        self.safezone: np.ndarray = VehicleBase.get_safezone(self.state)
+        self.level: int = 0
+        self.target: utils.State = utils.State(0, 0, 0, 0)
+        self.have_got_target: bool = False
+        self.dt: float = cfg['delta_t']
+        self.cur_action: Optional[utils.Action] = None
+        self.excepted_traj: List = []
 
         self.planner = KLevelPlanner(cfg)
 
@@ -65,3 +67,44 @@ class Vehicle(VehicleBase):
     def is_get_target(self) -> bool:
         return self.have_got_target or \
                ((self.state.x - self.target.x) ** 2 + (self.state.y - self.target.y) ** 2) < 3
+
+
+class VehicleList:
+    def __init__(self, vehicle_list = None) -> None:
+        self.vehicle_list: List[Vehicle] = vehicle_list if vehicle_list is not None else []
+
+    @property
+    def is_all_get_target(self) -> bool:
+        return all(vehicle.is_get_target for vehicle in self.vehicle_list)
+
+    @property
+    def is_any_collision(self) -> bool:
+        for i in range(len(self.vehicle_list) - 1):
+            for j in range(i + 1, len(self.vehicle_list)):
+                if utils.has_overlap(
+                    VehicleBase.get_box2d(self.vehicle_list[i].state),
+                    VehicleBase.get_box2d(self.vehicle_list[j].state)):
+                    return True
+
+        return False
+
+    def append(self, vehicle: Vehicle) -> None:
+        self.vehicle_list.append(vehicle)
+
+    def exclude(self, ego: Union[int, Vehicle]) -> List[Vehicle]:
+        if isinstance(ego, int):
+            return [item for idx, item in enumerate(self.vehicle_list) if idx != ego]
+        elif isinstance(ego, Vehicle):
+            return [vec for vec in self.vehicle_list if vec is not ego]
+        else:
+            logging.warning(f"VehicleList.exclude input type must be int or Vehicle")
+            return []
+
+    def __len__(self) -> int:
+        return len(self.vehicle_list)
+
+    def __getitem__(self, key: int) -> Vehicle:
+        return self.vehicle_list[key]
+
+    def __setitem__(self, key: int, value: Vehicle) -> None:
+        self.vehicle_list[key] = value
