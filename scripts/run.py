@@ -1,3 +1,4 @@
+import logging.handlers
 import os
 import math
 import time
@@ -26,7 +27,7 @@ LOG_LEVEL_DICT = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING,
 def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, save_fig:bool) -> None:
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
-        print("Config parameters:\n", config)
+        logging.info(f"Config parameters:\n{config}")
 
     logging.info(f"rounds_num: {rounds_num}")
     env = EnvCrossroads(size = 25, lanewidth = 4.2)
@@ -62,7 +63,7 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
         vehicle_0_history: List[State] = [vehicles[0].state]
         vehicle_1_history: List[State] = [vehicles[1].state]
 
-        print(f"\n================== Round {iter} ==================")
+        logging.info(f"\n================== Round {iter} ==================")
         for vehicle in vehicles:
             logging.info(f"{vehicle.name} >>> init_x: {vehicle.state.x:.2f}, "
                          f"init_y: {vehicle.state.y:.2f}, init_v: {vehicle.state.v:.2f}")
@@ -108,10 +109,10 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
                 plt.cla()
                 env.draw_env()
                 for vehicle in vehicles:
+                    excepted_traj = vehicle.excepted_traj.to_list()
                     vehicle.draw_vehicle()
                     plt.plot(vehicle.target.x, vehicle.target.y, marker='x', color=vehicle.color)
-                    plt.plot([traj[0] for traj in vehicle.excepted_traj[1:]],
-                             [traj[1] for traj in vehicle.excepted_traj[1:]], color=vehicle.color, linewidth=1)
+                    plt.plot(excepted_traj[0][1:], excepted_traj[1][1:], color=vehicle.color, linewidth=1)
                 plt.text(10, -15, f"v = {vehicles[0].state.v:.2f} m/s", color='blue')
                 plt.text(10,  15, f"v = {vehicles[1].state.v:.2f} m/s", color='red')
                 action_text = "GOAL !" if vehicles[0].is_get_target else vehicles[0].cur_action.name
@@ -138,7 +139,7 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
         if save_fig:
             plt.savefig(os.path.join(save_path, f"round_{iter}.svg"), format='svg', dpi=600)
 
-    print("\n=========================================")
+    logging.info("\n=========================================")
     logging.info(f"Experiment success {succeed_count}/{rounds_num}"
                  f"({100*succeed_count/rounds_num:.2f}%) rounds.")
 
@@ -160,17 +161,20 @@ if __name__ == "__main__":
         current_file_path = os.path.abspath(__file__)
         args.output_path = os.path.dirname(os.path.dirname(current_file_path))
 
-    logging.basicConfig(level=LOG_LEVEL_DICT[args.log_level],
-                        format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s',
-                        handlers=[logging.StreamHandler()])
-    logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
-
+    log_level = LOG_LEVEL_DICT[args.log_level]
+    log_format = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
     current_time = datetime.now()
     formatted_time = current_time.strftime("%Y-%m-%d-%H-%M-%S")
     result_save_path = os.path.join(args.output_path, "logs", formatted_time)
     if args.save_fig:
         os.makedirs(result_save_path, exist_ok=True)
+        log_file_path = os.path.join(result_save_path, 'log')
+        logging.basicConfig(level=log_level, format=log_format,
+                            handlers=[logging.StreamHandler(), logging.FileHandler(filename=log_file_path)])
         logging.info(f"Experiment results save at \"{result_save_path}\"")
+    else:
+        logging.basicConfig(level=log_level, format=log_format, handlers=[logging.StreamHandler()])
+    logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
     project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     config_file_path = os.path.join(project_path, 'config', args.config)

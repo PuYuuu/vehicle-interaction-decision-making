@@ -5,7 +5,7 @@ import numpy as np
 from typing import Tuple, List
 
 import utils
-from utils import Node
+from utils import Node, StateList
 from vehicle_base import VehicleBase
 
 
@@ -20,14 +20,14 @@ class MonteCarloTreeSearch:
     WEIGHT_DISTANCE = 0.1
 
     def __init__(self, ego: VehicleBase, other: VehicleBase,
-                 other_traj, cfg: dict = {}):
-        self.ego_vehicle = ego
-        self.other_vehicle = other
-        self.other_predict_traj = other_traj
-        
+                 other_traj: StateList, cfg: dict = {}):
+        self.ego_vehicle: VehicleBase = ego
+        self.other_vehicle: VehicleBase = other
+        self.other_predict_traj: StateList = other_traj
+
         self.computation_budget = cfg['computation_budget']
         self.dt = cfg['delta_t']
-        
+
 
     def excute(self, root: Node) -> Node:
         for _ in range(self.computation_budget):
@@ -56,8 +56,7 @@ class MonteCarloTreeSearch:
 
     def default_policy(self, node: Node) -> float:
         while node.is_terminal == False:
-            other_state_list = self.other_predict_traj[node.cur_level + 1]
-            cur_other_state = utils.State(other_state_list[0], other_state_list[1], other_state_list[2])
+            cur_other_state = self.other_predict_traj[node.cur_level + 1]
             next_node = node.next_node(self.dt, [cur_other_state])
             node = next_node
 
@@ -74,8 +73,7 @@ class MonteCarloTreeSearch:
         next_action = random.choice(utils.ActionList)
         while node.is_terminal == False and next_action in tried_actions:
             next_action = random.choice(utils.ActionList)
-        other_state_list = self.other_predict_traj[node.cur_level + 1]
-        cur_other_state = utils.State(other_state_list[0], other_state_list[1], other_state_list[2])
+        cur_other_state = self.other_predict_traj[node.cur_level + 1]
         node.add_child(next_action, self.dt, [cur_other_state])
 
         return node.children[-1]
@@ -190,13 +188,13 @@ class KLevelPlanner:
         self.dt = cfg['delta_t']
         self.config = cfg
 
-    def planning(self, ego: VehicleBase, other: VehicleBase) -> Tuple[utils.Action, List]:
+    def planning(self, ego: VehicleBase, other: VehicleBase) -> Tuple[utils.Action, StateList]:
         other_prediction = self.get_prediction(ego, other)
         actions, traj = self.forward_simulate(ego, other, other_prediction)
 
         return actions[0], traj
 
-    def forward_simulate(self, ego: VehicleBase, other: VehicleBase, traj) -> Tuple[List[utils.Action], List]:
+    def forward_simulate(self, ego: VehicleBase, other: VehicleBase, traj: StateList) -> Tuple[List[utils.Action], StateList]:
         mcts = MonteCarloTreeSearch(ego, other, traj, self.config)
         current_node = Node(state = ego.state, goal = ego.target)
         current_node = mcts.excute(current_node)
@@ -204,30 +202,28 @@ class KLevelPlanner:
             current_node = mcts.get_best_child(current_node, 0)
 
         actions = [act for act in current_node.actions]
-        pos_list = []
+        state_list = StateList()
         while current_node != None:
-            pos_list.append([current_node.state.x, current_node.state.y, current_node.state.yaw])
+            state_list.append(current_node.state)
             current_node = current_node.parent
-        expected_traj = pos_list[::-1]
+        expected_traj = state_list.reverse()
 
         if len(expected_traj) < self.steps + 1:
-            last_expected_pos = expected_traj[-1]
             logging.debug(f"The max level of the node is not enough({len(expected_traj)}),"
                           f"using the last value to complete it.")
-            for _ in range(self.steps + 1 - len(expected_traj)):
-                expected_traj.append(last_expected_pos)
+            expected_traj.expand(self.steps + 1)
 
         return actions, expected_traj
 
-    def get_prediction(self, ego: VehicleBase, other: VehicleBase) -> List:
+    def get_prediction(self, ego: VehicleBase, other: VehicleBase) -> StateList:
         if ego.level == 0 or other.is_get_target:
-            return [[other.state.x, other.state.y, other.state.yaw]] * (self.steps + 1)
+            return StateList([other.state] * (self.steps + 1))
         elif ego.level == 1:
-            other_prediction_ego = [[ego.state.x, ego.state.y, ego.state.yaw]] * (self.steps + 1)
+            other_prediction_ego = StateList([ego.state] * (self.steps + 1))
             other_act, other_traj = self.forward_simulate(other, ego, other_prediction_ego)
             return other_traj
         elif ego.level == 2:
-            static_traj = [[other.state.x, other.state.y, other.state.yaw]] * (self.steps + 1)
+            static_traj = StateList([other.state] * (self.steps + 1))
             _, ego_l0_traj = self.forward_simulate(ego, other, static_traj)
             _, other_l1_traj = self.forward_simulate(other, ego, ego_l0_traj)
             return other_l1_traj

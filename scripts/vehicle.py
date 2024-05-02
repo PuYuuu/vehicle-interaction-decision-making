@@ -18,7 +18,7 @@ class Vehicle(VehicleBase):
         self.have_got_target: bool = False
         self.dt: float = cfg['delta_t']
         self.cur_action: Optional[utils.Action] = None
-        self.excepted_traj: List = []
+        self.excepted_traj: Optional[utils.StateList] = None
 
         self.planner = KLevelPlanner(cfg)
 
@@ -34,11 +34,11 @@ class Vehicle(VehicleBase):
         else:
             logging.CRITICAL("set_target error, the target range must >= -25 and <= 25 !")
 
-    def excute(self, other: VehicleBase) -> Tuple[utils.Action, List]:
+    def excute(self, other: VehicleBase) -> Tuple[utils.Action, utils.StateList]:
         if self.is_get_target:
             self.have_got_target = True
             self.state.v = 0
-            excepted_traj = []
+            excepted_traj = utils.StateList()
             act = utils.Action.MAINTAIN
         else:
             act, excepted_traj = self.planner.planning(self, other)

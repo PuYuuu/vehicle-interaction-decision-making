@@ -29,13 +29,59 @@ class State:
         return [self.x, self.y, self.yaw, self.v]
 
 
+class StateList:
+    def __init__(self, state_list = None) -> None:
+        self.state_list: List[State] = state_list if state_list is not None else []
+
+    def append(self, state: State) -> None:
+        self.state_list.append(state)
+
+    def reverse(self) -> 'StateList':
+        self.state_list = self.state_list[::-1]
+
+        return self
+
+    def expand(self, excepted_len: int, expand_state: Optional[State] = None) -> None:
+        if len(self.state_list) >= excepted_len:
+            return
+        else:
+            if expand_state is None:
+                expand_state = self.state_list[-1]
+            for _ in range(excepted_len - len(self.state_list)):
+                self.state_list.append(expand_state)
+
+    def to_list(self, is_vertical: bool = True) -> List:
+        if is_vertical is True:
+            states = [[],[],[],[]]
+            for state in self.state_list:
+                states[0].append(state.x)
+                states[1].append(state.y)
+                states[2].append(state.yaw)
+                states[3].append(state.v)
+        else:
+            states = []
+            for state in self.state_list:
+                states.append([state.x, state.y, state.yaw, state.v])
+
+        return states
+
+    def __len__(self) -> int:
+        return len(self.state_list)
+
+    def __getitem__(self, key: int) -> State:
+        return self.state_list[key]
+
+    def __setitem__(self, key: int, value: State) -> None:
+        self.state_list[key] = value
+
+
 class Node:
     MAX_LEVEL: int = 6
     calc_value_callback = None
 
     def __init__(self, state = State(), level = 0, p: Optional["Node"] = None,
                  action: Optional[Action] = None, others: List[State] = [],
-                 goal: State = State()):
+                 goal: State = State()) -> None:
         self.state: State = state
 
         self.value: float = 0

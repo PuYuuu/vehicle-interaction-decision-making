@@ -57,7 +57,7 @@ Coming soon ...
 
 ### 🛠Configuration file usage
 
-The configuration file of program running parameters is in the `${Project}/config` path and strictly uses the yaml file format.
+The configuration file of program running parameters is in `${Project}/config` and strictly uses the yaml file format.
 
 ## Experimental results📊
 
