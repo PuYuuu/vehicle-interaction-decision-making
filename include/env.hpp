@@ -5,7 +5,6 @@
 #include <vector>
 
 
-
 class EnvCrossroads
 {
 private:
@@ -19,7 +18,6 @@ public:
     ~EnvCrossroads() {}
     void draw_env(void);
 };
-
 
 
 #endif

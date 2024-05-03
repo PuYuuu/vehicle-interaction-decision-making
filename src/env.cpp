@@ -1,6 +1,6 @@
-#include "env.hpp"
+#include <matplotlib-cpp/matplotlibcpp.h>
 
-#include "matplotlibcpp.h"
+#include "env.hpp"
 
 namespace plt = matplotlibcpp;
 

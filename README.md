@@ -38,7 +38,7 @@ python scripts/run.py
 Or manually specify parameters for example:
 
 ```
-python scripts/run.py -r 5 --show -l 0
+python scripts/run.py -r 5 -l 0 --save_fig
 ```
 
 For specific parameter descriptions, please use `python scripts/run.py -h` to view.

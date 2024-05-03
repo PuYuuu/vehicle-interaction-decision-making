@@ -49,7 +49,7 @@ class VehicleBase(ABC):
         safezone += np.array([[tar_offset.x], [tar_offset.y]])
 
         return safezone
-    
+
     @staticmethod
     def initialize(env: EnvCrossroads, len: float, width: float,
                    safe_len: float, safe_width: float):

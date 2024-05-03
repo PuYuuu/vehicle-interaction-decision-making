@@ -1,4 +1,3 @@
-import logging.handlers
 import os
 import math
 import time
@@ -24,7 +23,7 @@ LOG_LEVEL_DICT = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING,
                   3: logging.ERROR, 4: logging.CRITICAL}
 
 
-def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, save_fig:bool) -> None:
+def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_fig:bool) -> None:
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
         logging.info(f"Config parameters:\n{config}")
@@ -105,7 +104,7 @@ def run(rounds_num:int, config_path:str, save_path:str, show_animation:bool, sav
             elapsed_time = time.time() - start_time
             logging.debug(f"single step cost {elapsed_time:.6f} second")
 
-            if show_animation:
+            if not no_animation:
                 plt.cla()
                 env.draw_env()
                 for vehicle in vehicles:
@@ -153,7 +152,7 @@ if __name__ == "__main__":
                              f"2:logging.WARNING\t3:logging.ERROR\t"
                              f"4:logging.CRITICAL\t")
     parser.add_argument('--config', '-c', type=str, default='default.yaml', help='')
-    parser.add_argument('--show', action='store_true', default=False, help='')
+    parser.add_argument('--no_animation', action='store_true', default=False, help='')
     parser.add_argument('--save_fig', action='store_true', default=False, help='')
     args = parser.parse_args()
 
@@ -179,4 +178,4 @@ if __name__ == "__main__":
     project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     config_file_path = os.path.join(project_path, 'config', args.config)
 
-    run(args.rounds, config_file_path, result_save_path, args.show, args.save_fig)
+    run(args.rounds, config_file_path, result_save_path, args.no_animation, args.save_fig)
