@@ -4,6 +4,8 @@
 
 #include <vector>
 
+#include <Eigen/Core>
+
 class State {
 private:
     /* data */
@@ -22,5 +24,7 @@ public:
         return std::vector<double>{x, y, yaw, v};
     }
 };
+
+State kinematic_propagate(State state, Eigen::Vector2d act, double dt);
 
 #endif

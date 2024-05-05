@@ -8,9 +8,11 @@
 class EnvCrossroads
 {
 private:
+
+public:
     double map_size;
     double lanewidth;
-public:
+
     std::vector<std::vector<std::vector<double>>> rect;
     std::vector<std::vector<std::vector<double>>> laneline;
 

@@ -30,36 +30,43 @@ public:
     ~VehicleBase() {};
 
     static void initialize(std::shared_ptr<EnvCrossroads> _env,
-        double _len, double _width, double _safe_len, double _safe_width);
-    static Eigen::Matrix<double, 2, 5> get_box2d(const State& tar_offset);
-};
-
-double VehicleBase::length = 5;
-double VehicleBase::width = 2;
-double VehicleBase::safe_length = 8;
-double VehicleBase::safe_width = 2.4;
-std::shared_ptr<EnvCrossroads> VehicleBase::env = nullptr;
-
-void VehicleBase::initialize(std::shared_ptr<EnvCrossroads> _env,
         double _len, double _width, double _safe_len, double _safe_width) {
-    VehicleBase::length = _len;
-    VehicleBase::width = _width;
-    VehicleBase::safe_length = _safe_len;
-    VehicleBase::safe_width = _safe_width;
-    VehicleBase::env = _env;
-}
+        VehicleBase::length = _len;
+        VehicleBase::width = _width;
+        VehicleBase::safe_length = _safe_len;
+        VehicleBase::safe_width = _safe_width;
+        VehicleBase::env = _env;
+    }
 
-Eigen::Matrix<double, 2, 5> get_box2d(const State& tar_offset) {
-    Eigen::Matrix<double, 2, 5> vehicle;
-    vehicle << -VehicleBase::length/2, VehicleBase::length/2, VehicleBase::length/2, -VehicleBase::length/2, -VehicleBase::length/2,
-             VehicleBase::width/2, VehicleBase::width/2, -VehicleBase::width/2, -VehicleBase::width/2, VehicleBase::width/2;
-    Eigen::Matrix2d rot;
-    rot << cos(tar_offset.yaw), -sin(tar_offset.yaw), sin(tar_offset.yaw), cos(tar_offset.yaw);
-    
-    vehicle = rot * vehicle;
-    vehicle += Eigen::Vector2d(tar_offset.x, tar_offset.y).replicate(1, 5);
+    static Eigen::Matrix<double, 2, 5> get_box2d(const State& tar_offset) {
+        Eigen::Matrix<double, 2, 5, Eigen::RowMajor> vehicle;
+        vehicle << -VehicleBase::length/2, VehicleBase::length/2,
+                    VehicleBase::length/2, -VehicleBase::length/2, -VehicleBase::length/2,
+                    VehicleBase::width/2, VehicleBase::width/2,
+                    -VehicleBase::width/2, -VehicleBase::width/2, VehicleBase::width/2;
+        Eigen::Matrix2d rot;
+        rot << cos(tar_offset.yaw), -sin(tar_offset.yaw), sin(tar_offset.yaw), cos(tar_offset.yaw);
+        
+        vehicle = rot * vehicle;
+        vehicle += Eigen::Vector2d(tar_offset.x, tar_offset.y).replicate(1, 5);
 
-    return vehicle;
-}
+        return vehicle;
+    }
+
+    static Eigen::Matrix<double, 2, 5> get_safezone(const State& tar_offset) {
+        Eigen::Matrix<double, 2, 5, Eigen::RowMajor> safezone;
+        safezone << -VehicleBase::safe_length/2, VehicleBase::safe_length/2,
+                    VehicleBase::safe_length/2, -VehicleBase::safe_length/2, -VehicleBase::safe_length/2,
+                    VehicleBase::safe_width/2, VehicleBase::safe_width/2,
+                    -VehicleBase::safe_width/2, -VehicleBase::safe_width/2, VehicleBase::safe_width/2;
+        Eigen::Matrix2d rot;
+        rot << cos(tar_offset.yaw), -sin(tar_offset.yaw), sin(tar_offset.yaw), cos(tar_offset.yaw);
+
+        safezone = rot * safezone;
+        safezone += Eigen::Vector2d(tar_offset.x, tar_offset.y).replicate(1, 5);
+
+        return safezone;
+    }
+};
 
 #endif

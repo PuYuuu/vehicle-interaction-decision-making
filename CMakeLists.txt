@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(DecisionMaking)
 
-set(CMAKE_BUILD_TYPE "Relase")
+set(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_CXX_FLAGS "-std=c++17")
 
 
@@ -27,8 +27,8 @@ include_directories("/usr/include/eigen3")
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-add_executable(decision_making
-  ${PROJECT_SOURCE_DIR}/src/decision_making.cpp
-  ${PROJECT_SOURCE_DIR}/src/env.cpp)
-target_link_libraries(decision_making
-  matplotlib_cpp fmt::fmt spdlog::spdlog yaml-cpp::yaml-cpp)
+file(GLOB SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+set(3RDPARTY matplotlib_cpp fmt::fmt spdlog::spdlog yaml-cpp::yaml-cpp)
+
+add_executable(decision_making ${SOURCE_FILES})
+target_link_libraries(decision_making ${3RDPARTY})

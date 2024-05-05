@@ -1,4 +1,6 @@
+#include <cmath>
 #include <string>
+#include <memory>
 #include <getopt.h>
 #include <unordered_map>
 
@@ -8,6 +10,9 @@
 #include <matplotlib-cpp/matplotlibcpp.h>
 
 #include "env.hpp"
+#include "utils.hpp"
+#include "vehicle.hpp"
+#include "vehicle_base.hpp"
 
 using std::string;
 namespace plt = matplotlibcpp;
@@ -35,15 +40,22 @@ void run(int rounds_num, string config_path, string save_path, bool show_animati
     }
 
     double delta_t = config["delta_t"].as<double>();
-    EnvCrossroads env(25, 4);
+    std::shared_ptr<EnvCrossroads> env = std::make_shared<EnvCrossroads>(25, 4);
+    VehicleBase::initialize(env, 5, 2, 8, 2.4);
 
+    Vehicle vehicle_0 = \
+            Vehicle("vehicle_0", State(env->lanewidth/2, -15, M_PI_2, 0), "blue", config);
 
+    if (show_animation) {
+        plt::cla();
+        env->draw_env();
+        vehicle_0.draw_vehicle();
 
-    // env.draw_env();
-    // plt::xlim(-25.0, 25.0);
-    // plt::ylim(-25.0, 25.0);
-    // plt::set_aspect_equal();
-    // plt::show();
+        plt::xlim(-25.0, 25.0);
+        plt::ylim(-25.0, 25.0);
+        plt::set_aspect_equal();
+        plt::show();
+    }
 
 }
 
