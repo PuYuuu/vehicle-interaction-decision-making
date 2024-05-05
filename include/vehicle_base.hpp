@@ -24,10 +24,18 @@ public:
     std::string name;
     State state;
     std::string color;
+    State target;
+    int level;
+    bool have_got_target;
 
     VehicleBase(std::string _name, State _st, std::string _c) :
-        name(_name), state(_st), color(_c) {}
+        name(_name), state(_st), color(_c), level(0), have_got_target(false) {
+        target = State(0, 0, 0, 0);
+    }
     ~VehicleBase() {};
+    void set_target(State tar);
+    void set_level(int l);
+    bool is_get_target(void) const;
 
     static void initialize(std::shared_ptr<EnvCrossroads> _env,
         double _len, double _width, double _safe_len, double _safe_width) {

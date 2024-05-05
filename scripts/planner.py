@@ -201,7 +201,7 @@ class KLevelPlanner:
         for _ in range(Node.MAX_LEVEL - 1):
             current_node = mcts.get_best_child(current_node, 0)
 
-        actions = [act for act in current_node.actions]
+        actions = current_node.actions
         state_list = StateList()
         while current_node != None:
             state_list.append(current_node.state)

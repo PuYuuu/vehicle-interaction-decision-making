@@ -42,12 +42,13 @@ class StateList:
         return self
 
     def expand(self, excepted_len: int, expand_state: Optional[State] = None) -> None:
-        if len(self.state_list) >= excepted_len:
+        cur_size = len(self.state_list)
+        if cur_size >= excepted_len:
             return
         else:
             if expand_state is None:
                 expand_state = self.state_list[-1]
-            for _ in range(excepted_len - len(self.state_list)):
+            for _ in range(excepted_len - cur_size):
                 self.state_list.append(expand_state)
 
     def to_list(self, is_vertical: bool = True) -> List:
@@ -102,10 +103,7 @@ class Node:
 
     @property
     def is_fully_expanded(self) -> bool:
-        if len(self.children) == len(Action):
-            return True
-
-        return False
+        return len(self.children) >= len(Action)
 
     @staticmethod
     def initialize(max_level, callback) -> None:

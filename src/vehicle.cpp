@@ -6,29 +6,19 @@
 
 namespace plt = matplotlibcpp;
 
-void Vehicle::set_level(int l) {
-    if (l >= 0 && l < 3) {
-        level = l;
-    } else {
-        spdlog::error("set_level error, the level must be >= 0 and > 3 !");
-    }
-}
+std::pair<Action, StateList> Vehicle::excute(VehicleBase other) {
+    std::pair<Action, StateList> act_and_traj;
 
-void Vehicle::set_target(State tar) {
-    if (tar.x >= -25 && tar.x <= 25 && tar.y >= -25 && tar.y <= 25) {
-        target = tar;
-    } else {
-        spdlog::error("set_target error, the target range must >= -25 and <= 25 !");
-    }
-}
-
-void Vehicle::excute(VehicleBase other) {
     if (is_get_target()) {
         have_got_target = true;
         state.v = 0;
+        act_and_traj.first = Action::MAINTAIN;
+        act_and_traj.second = StateList();
     } else {
-
+        act_and_traj = planner.planning(*this, other);
     }
+
+    return act_and_traj;
 }
 
 void Vehicle::draw_vehicle(bool fill_mode /* = false */) {
@@ -54,8 +44,4 @@ void Vehicle::draw_vehicle(bool fill_mode /* = false */) {
     } else {
         plt::fill(box2d_vec[0], box2d_vec[1], {{"color", color}, {"alpha", "0.8"}});
     }
-}
-
-bool Vehicle::is_get_target(void) {
-    return have_got_target || hypot(state.x - target.x, state.y - target.y) < 1.7;
 }
