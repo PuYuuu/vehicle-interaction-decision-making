@@ -33,12 +33,8 @@ double MonteCarloTreeSearch::calc_cur_value(std::shared_ptr<Node> node, double l
     }
 
     int offroad = 0;
-    for (auto& rect : VehicleBase::env->rect) {
-        //TODO: need to overload the has_overlap() function
-        Eigen::Matrix<double, 2, 6> rect_mat;
-        rect_mat << rect[0][0], rect[0][1], rect[0][2],rect[0][3],rect[0][4],rect[0][5],
-                    rect[1][0],rect[1][1],rect[1][2],rect[1][3],rect[1][4],rect[1][5];
-        if (has_overlap(ego_box2d, rect_mat)) {
+    for (auto& rect : VehicleBase::env->rect_mat) {
+        if (has_overlap(ego_box2d, rect)) {
             offroad = -1;
             break;
         }
@@ -74,10 +70,8 @@ bool MonteCarloTreeSearch::is_opposite_direction(State pos, Eigen::MatrixXd ego_
     double y = pos.y;
     double yaw = pos.yaw;
 
-    for (auto laneline : VehicleBase::env->laneline) {
-        Eigen::Matrix2d lane_mat;
-        lane_mat << laneline[0][0], laneline[0][1], laneline[1][0], laneline[1][1];
-        if (has_overlap(ego_box2d, lane_mat)) {
+    for (auto laneline : VehicleBase::env->laneline_mat) {
+        if (has_overlap(ego_box2d, laneline)) {
             return true;
         }
     }

@@ -24,6 +24,26 @@ EnvCrossroads::EnvCrossroads(double size, double width) :
         {{-size, -2*lanewidth}, {0, 0}},
         {{size, 2*lanewidth}, {0, 0}}
     };
+
+    for (const std::vector<std::vector<double>>& r : rect) {
+        Eigen::MatrixXd mat(r.size(), r[0].size());
+        for (int i = 0; i < r.size(); ++i) {
+            for (int j = 0; j < r[0].size(); ++j) {
+                mat(i, j) = r[i][j];
+            }
+        }
+        rect_mat.emplace_back(mat);
+    }
+    
+    for (const std::vector<std::vector<double>>& l : laneline) {
+        Eigen::MatrixXd mat(l.size(), l[0].size());
+        for (int i = 0; i < l.size(); ++i) {
+            for (int j = 0; j < l[0].size(); ++j) {
+                mat(i, j) = l[i][j];
+            }
+        }
+        laneline_mat.emplace_back(mat);
+    }
 }
 
 void EnvCrossroads::draw_env(void)

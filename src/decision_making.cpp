@@ -78,7 +78,7 @@ void run(int rounds_num, string config_path,
 
         uint64_t cur_loop_count = 0;
         while (true) {
-            if (vehicle_1.is_get_target()) {
+            if (vehicle_0.is_get_target() && vehicle_1.is_get_target()) {
                 spdlog::info(fmt::format("Round {} successed !", iter));
                 break;
             }
@@ -89,15 +89,17 @@ void run(int rounds_num, string config_path,
                 break;
             }
 
-            // auto act_and_traj_0 = vehicle_0.excute(vehicle_1);
+            auto act_and_traj_0 = vehicle_0.excute(vehicle_1);
             auto act_and_traj_1 = vehicle_1.excute(vehicle_0);
 
-            // vehicle_0.state = kinematic_propagate(
-            //                     vehicle_0.state, get_action_value(act_and_traj_0.first), delta_t);
+            vehicle_0.state = kinematic_propagate(
+                                vehicle_0.state, get_action_value(act_and_traj_0.first), delta_t);
             vehicle_1.state = kinematic_propagate(
                                 vehicle_1.state, get_action_value(act_and_traj_1.first), delta_t);
             StateList excepted_traj_1 = act_and_traj_1.second;
-            std::vector<std::vector<double>> traj_vec_1 = excepted_traj_1.to_vector();
+            StateList excepted_traj_0 = act_and_traj_0.second;
+            auto traj_vec_1 = excepted_traj_1.to_vector();
+            auto traj_vec_0 = excepted_traj_0.to_vector();
 
             if (show_animation) {
                 plt::cla();
@@ -106,10 +108,11 @@ void run(int rounds_num, string config_path,
                 vehicle_1.draw_vehicle();
                 plt::plot({vehicle_0.target.x}, {vehicle_0.target.y}, {{"marker", "x"}, {"color", vehicle_0.color}});
                 plt::plot({vehicle_1.target.x}, {vehicle_1.target.y}, {{"marker", "x"}, {"color", vehicle_1.color}});
+                plt::plot(traj_vec_0[0], traj_vec_0[1], {{"color", vehicle_0.color}, {"linewidth", "1"}});
                 plt::plot(traj_vec_1[0], traj_vec_1[1], {{"color", vehicle_1.color}, {"linewidth", "1"}});
                 plt::text(10, -15, fmt::format("v = {:.2f} m/s", vehicle_0.state.v));
                 plt::text(10,  15, fmt::format("v = {:.2f} m/s", vehicle_1.state.v));
-                // plt::text(10, -18, fmt::format("{}", get_action_name(act_and_traj_0.first)));
+                plt::text(10, -18, fmt::format("{}", get_action_name(act_and_traj_0.first)));
                 plt::text(10,  12, fmt::format("{}", get_action_name(act_and_traj_1.first)));
                 plt::xlim(-25.0, 25.0);
                 plt::ylim(-25.0, 25.0);

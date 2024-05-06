@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(DecisionMaking)
 
-set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS "-std=c++17")
 
 

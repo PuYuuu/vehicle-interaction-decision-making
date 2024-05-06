@@ -3,7 +3,7 @@
 #define __ENV_HPP
 
 #include <vector>
-
+#include <Eigen/Core>
 
 class EnvCrossroads
 {
@@ -15,6 +15,9 @@ public:
 
     std::vector<std::vector<std::vector<double>>> rect;
     std::vector<std::vector<std::vector<double>>> laneline;
+
+    std::vector<Eigen::MatrixXd> rect_mat;
+    std::vector<Eigen::MatrixXd> laneline_mat;
 
     EnvCrossroads(double size = 25.0, double width = 4.0);
     ~EnvCrossroads() {}

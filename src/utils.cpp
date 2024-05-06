@@ -81,13 +81,11 @@ Action get_random_action(void) {
 bool has_overlap(Eigen::MatrixXd box2d_0, Eigen::MatrixXd box2d_1) {
     std::vector<Eigen::Vector2d> total_sides;
     for (size_t idx = 1; idx < box2d_0.cols(); ++idx) {
-        Eigen::Vector2d tmp;
-        tmp = box2d_0.col(idx).head(2);
+        Eigen::Vector2d tmp = box2d_0.col(idx).head(2) - box2d_0.col(idx - 1).head(2);
         total_sides.emplace_back(tmp);
     }
     for (size_t idx = 1; idx < box2d_1.cols(); ++idx) {
-        Eigen::Vector2d tmp;
-        tmp = box2d_1.col(idx).head(2);
+        Eigen::Vector2d tmp = box2d_1.col(idx).head(2) - box2d_1.col(idx - 1).head(2);
         total_sides.emplace_back(tmp);
     }
 
