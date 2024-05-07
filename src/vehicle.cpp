@@ -24,7 +24,8 @@ std::pair<Action, StateList> Vehicle::excute(VehicleBase other) {
 void Vehicle::draw_vehicle(bool fill_mode /* = false */) {
     Eigen::Matrix<double, 2, 2, Eigen::RowMajor> head;
     Eigen::Matrix2d rot;
-    head << 0.3 * VehicleBase::length, 0.3 * VehicleBase::length, VehicleBase::width/2, -VehicleBase::width/2;
+    head << 0.3 * VehicleBase::length, 0.3 * VehicleBase::length,
+            VehicleBase::width/2, -VehicleBase::width/2;
     rot << cos(state.yaw), -sin(state.yaw), sin(state.yaw), cos(state.yaw);
 
     head = rot * head;
@@ -42,6 +43,6 @@ void Vehicle::draw_vehicle(bool fill_mode /* = false */) {
         plt::plot(box2d_vec[0], box2d_vec[1], color);
         plt::plot(head_vec[0], head_vec[1], color);
     } else {
-        plt::fill(box2d_vec[0], box2d_vec[1], {{"color", color}, {"alpha", "0.8"}});
+        plt::fill(box2d_vec[0], box2d_vec[1], {{"color", color}, {"alpha", "0.5"}});
     }
 }

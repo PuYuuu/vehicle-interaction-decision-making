@@ -24,17 +24,17 @@ double MonteCarloTreeSearch::calc_cur_value(std::shared_ptr<Node> node, double l
     int avoid = 0;
     int safe = 0;
     for (auto& cur_other_state : node->other_agent_state) {
-        if (has_overlap(ego_box2d, VehicleBase::get_box2d(cur_other_state))) {
+        if (utils::has_overlap(ego_box2d, VehicleBase::get_box2d(cur_other_state))) {
             avoid = -1;
         }
-        if (has_overlap(ego_safezone, VehicleBase::get_safezone(cur_other_state))) {
+        if (utils::has_overlap(ego_safezone, VehicleBase::get_safezone(cur_other_state))) {
             safe = -1;
         }
     }
 
     int offroad = 0;
     for (auto& rect : VehicleBase::env->rect_mat) {
-        if (has_overlap(ego_box2d, rect)) {
+        if (utils::has_overlap(ego_box2d, rect)) {
             offroad = -1;
             break;
         }
@@ -71,7 +71,7 @@ bool MonteCarloTreeSearch::is_opposite_direction(State pos, Eigen::MatrixXd ego_
     double yaw = pos.yaw;
 
     for (auto laneline : VehicleBase::env->laneline_mat) {
-        if (has_overlap(ego_box2d, laneline)) {
+        if (utils::has_overlap(ego_box2d, laneline)) {
             return true;
         }
     }
@@ -137,9 +137,9 @@ std::shared_ptr<Node> MonteCarloTreeSearch::expand(std::shared_ptr<Node> node) {
         tried_actions.insert(child->action);
     }
 
-    Action next_action = get_random_action();
+    Action next_action = utils::get_random_action();
     while (!node->is_terminal() && tried_actions.count(next_action)) {
-        next_action = get_random_action();
+        next_action = utils::get_random_action();
     }
     StateList other_states;
     State cur_other_state = other_predict_traj[node->cur_level + 1];
@@ -191,7 +191,8 @@ void MonteCarloTreeSearch::backup(std::shared_ptr<Node> node, double r) {
     }
 }
 
-std::pair<Action, StateList> KLevelPlanner::planning(const VehicleBase& ego, const VehicleBase& other) {
+std::pair<Action, StateList> KLevelPlanner::planning(
+            const VehicleBase& ego, const VehicleBase& other) {
     StateList other_prediction = get_prediction(ego, other);
     std::pair<std::vector<Action>, StateList> ret = forward_simulate(ego, other, other_prediction);
 
@@ -201,7 +202,8 @@ std::pair<Action, StateList> KLevelPlanner::planning(const VehicleBase& ego, con
 std::pair<std::vector<Action>, StateList> KLevelPlanner::forward_simulate(
     const VehicleBase& ego, const VehicleBase& other, const StateList& traj) {
     MonteCarloTreeSearch mcts(ego, other, traj, config);
-    std::shared_ptr<Node> current_node = std::make_shared<Node>(ego.state, 0, nullptr, Action::MAINTAIN, StateList(), ego.target);
+    std::shared_ptr<Node> current_node =
+        std::make_shared<Node>(ego.state, 0, nullptr, Action::MAINTAIN, StateList(), ego.target);
     current_node = mcts.excute(current_node);
     for (int i = 0; i < Node::MAX_LEVEL - 1; ++i) {
         current_node = mcts.get_best_child(current_node, 0);

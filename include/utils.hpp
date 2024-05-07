@@ -2,6 +2,7 @@
 #ifndef __UTILS_HPP
 #define __UTILS_HPP
 
+#include <chrono>
 #include <vector>
 #include <memory>
 #include <string>
@@ -10,10 +11,25 @@
 
 #include <Eigen/Core>
 
-// typedef double (*FunctionPtrType)(std::shared_ptr<Node>, double);
+
 constexpr int ACTION_SIZE = 6;
 enum class Action {MAINTAIN, TURNLEFT, TURNRIGHT, ACCELERATE, DECELERATE, BRAKE};
 
+class TicToc {
+public:
+    TicToc(void) { tic(); }
+
+    void tic(void) { start = std::chrono::system_clock::now(); }
+
+    double toc(void) {
+        end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end - start;
+        return elapsed_seconds.count();
+    }
+
+private:
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+};
 
 class State {
 private:
@@ -172,10 +188,15 @@ public:
     std::shared_ptr<Node> next_node(double delta_t, StateList others);
 };
 
-std::string get_action_name(Action action);
-Action get_random_action(void);
-Eigen::Vector2d get_action_value(Action act);
-bool has_overlap(Eigen::MatrixXd box2d_0, Eigen::MatrixXd box2d_1);
-State kinematic_propagate(State state, Eigen::Vector2d act, double dt);
+namespace utils {
+
+    std::string get_action_name(Action action);
+    Action get_random_action(void);
+    Eigen::Vector2d get_action_value(Action act);
+    bool has_overlap(Eigen::MatrixXd box2d_0, Eigen::MatrixXd box2d_1);
+    State kinematic_propagate(State state, Eigen::Vector2d act, double dt);
+    std::string absolute_path(std::string path);
+
+}
 
 #endif

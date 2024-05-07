@@ -62,7 +62,7 @@ private:
     YAML::Node config;
 public:
     KLevelPlanner() {}
-    KLevelPlanner(YAML::Node cfg) : config(cfg) {
+    KLevelPlanner(const YAML::Node& cfg) : config(cfg) {
         steps = cfg["max_step"].as<int>();
         dt = cfg["delta_t"].as<double>();
     }

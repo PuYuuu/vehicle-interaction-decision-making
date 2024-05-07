@@ -20,7 +20,7 @@ public:
     Eigen::Matrix<double, 2, 5, Eigen::RowMajor> vehicle_box2d;
     Eigen::Matrix<double, 2, 5, Eigen::RowMajor> safezone;
 
-    Vehicle(std::string _name, State _st, std::string _c, YAML::Node cfg) :
+    Vehicle(std::string _name, State _st, std::string _c, const YAML::Node& cfg) :
         VehicleBase(_name, _st, _c) {
         vehicle_box2d = VehicleBase::get_box2d(state);
         safezone = VehicleBase::get_safezone(state);

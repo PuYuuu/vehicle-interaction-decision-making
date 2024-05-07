@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include <getopt.h>
+#include <filesystem>
 #include <unordered_map>
 
 #include <fmt/core.h>
@@ -24,19 +25,21 @@ static struct option long_options[] = {
     {"output_path", required_argument, 0, 'o'},
     {"log_level", required_argument, 0, 'l'},
     {"config", required_argument, 0, 'c'},
-    {"no_animation", required_argument, 0, 'n'},
-    {"save_fig", required_argument, 0, 'f'},
+    {"no_animation", no_argument, 0, 'n'},
+    {"save_fig", no_argument, 0, 'f'},
 };
 
 std::unordered_map<int, spdlog::level::level_enum> LOG_LEVEL_DICT =
     {{0, spdlog::level::trace}, {1, spdlog::level::debug}, {0, spdlog::level::info},
      {0, spdlog::level::warn}, {0, spdlog::level::err}, {0, spdlog::level::critical}};
 
-void run(int rounds_num, string config_path,
-    string save_path, bool show_animation, bool save_fig) {
+void run(int rounds_num, std::filesystem::path config_path,
+    std::filesystem::path save_path, bool show_animation, bool save_fig) {
     YAML::Node config;
+    spdlog::info(fmt::format("config path: {}", config_path.string()));
     try {
-        config = YAML::LoadFile(config_path);
+        config = YAML::LoadFile(config_path.string());
+        spdlog::info(fmt::format("config parameters:\n{}", YAML::Dump(config)));
     } catch (const YAML::Exception& e) {
         spdlog::error(fmt::format("Error parsing YAML file: {}", e.what()));
         return ;
@@ -77,25 +80,32 @@ void run(int rounds_num, string config_path,
         spdlog::info(fmt::format("================== Round {} ==================", iter));
 
         uint64_t cur_loop_count = 0;
+        TicToc total_cost_time;
         while (true) {
             if (vehicle_0.is_get_target() && vehicle_1.is_get_target()) {
                 spdlog::info(fmt::format("Round {} successed !", iter));
+                ++succeed_count;
                 break;
             }
 
-            if (has_overlap(VehicleBase::get_box2d(vehicle_0.state), VehicleBase::get_box2d(vehicle_1.state)) ||
+            if (utils::has_overlap(VehicleBase::get_box2d(vehicle_0.state), VehicleBase::get_box2d(vehicle_1.state)) ||
                 cur_loop_count > max_per_iters) {
                 spdlog::info(fmt::format("Round {} failed !", iter));
                 break;
             }
 
+            TicToc iter_cost_time;
             auto act_and_traj_0 = vehicle_0.excute(vehicle_1);
             auto act_and_traj_1 = vehicle_1.excute(vehicle_0);
 
-            vehicle_0.state = kinematic_propagate(
-                                vehicle_0.state, get_action_value(act_and_traj_0.first), delta_t);
-            vehicle_1.state = kinematic_propagate(
-                                vehicle_1.state, get_action_value(act_and_traj_1.first), delta_t);
+            vehicle_0.state = utils::kinematic_propagate(
+                                vehicle_0.state, utils::get_action_value(act_and_traj_0.first), delta_t);
+            vehicle_1.state = utils::kinematic_propagate(
+                                vehicle_1.state, utils::get_action_value(act_and_traj_1.first), delta_t);
+            vehicle_0_history.push_back(vehicle_0.state);
+            vehicle_1_history.push_back(vehicle_1.state);
+            spdlog::debug(fmt::format("single step cost {:.3f} sec", iter_cost_time.toc()));            
+            
             StateList excepted_traj_1 = act_and_traj_1.second;
             StateList excepted_traj_0 = act_and_traj_0.second;
             auto traj_vec_1 = excepted_traj_1.to_vector();
@@ -112,21 +122,45 @@ void run(int rounds_num, string config_path,
                 plt::plot(traj_vec_1[0], traj_vec_1[1], {{"color", vehicle_1.color}, {"linewidth", "1"}});
                 plt::text(10, -15, fmt::format("v = {:.2f} m/s", vehicle_0.state.v));
                 plt::text(10,  15, fmt::format("v = {:.2f} m/s", vehicle_1.state.v));
-                plt::text(10, -18, fmt::format("{}", get_action_name(act_and_traj_0.first)));
-                plt::text(10,  12, fmt::format("{}", get_action_name(act_and_traj_1.first)));
+                plt::text(10, -18, fmt::format("{}", utils::get_action_name(act_and_traj_0.first)));
+                plt::text(10,  12, fmt::format("{}", utils::get_action_name(act_and_traj_1.first)));
                 plt::xlim(-25.0, 25.0);
                 plt::ylim(-25.0, 25.0);
                 plt::set_aspect_equal();
                 plt::pause(1);
             }
         }
+
+        plt::clf();
+        env->draw_env();
+        for (auto history : vehicle_0_history) {
+            Vehicle tmp("tmp", history, "blue", config);
+            tmp.draw_vehicle(true);
+        }
+        for (auto history : vehicle_1_history) {
+            Vehicle tmp("tmp", history, "red", config);
+            tmp.draw_vehicle(true);
+        }
+        plt::xlim(-25, 25);
+        plt::ylim(-25, 25);
+        plt::set_aspect_equal();
+        if (save_fig) {
+            plt::save((save_path/(std::to_string(iter)+".svg")).string(), 600);
+        }
     }
+
+    double succeed_rate = 100 * succeed_count / rounds_num;
+    spdlog::info("\n=========================================");
+    spdlog::info(fmt::format("Experiment success {}/{}({:.2f}%) rounds.", succeed_count, rounds_num, succeed_rate));
 }
 
 int main(int argc, char** argv) {
+    std::filesystem::path source_file_path(__FILE__);
+    std::filesystem::path project_path = source_file_path.parent_path().parent_path();
+
     int rounds_num = 5;
-    string output_path;
-    string config_path;
+    std::filesystem::path output_path = project_path / "logs";
+    std::filesystem::path config_path = "default.yaml";
     bool show_animation = true;
     bool save_flag = false;
     int log_level = 1;      // debug
@@ -138,7 +172,7 @@ int main(int argc, char** argv) {
                 rounds_num = std::stoi(optarg);
                 break;
             case 'o':
-                output_path = optarg;
+                output_path = utils::absolute_path(optarg);
                 break;
             case 'l':
                 log_level = std::stoi(optarg);
@@ -160,7 +194,22 @@ int main(int argc, char** argv) {
     spdlog::set_level(LOG_LEVEL_DICT[log_level]);
     spdlog::set_pattern("%Y-%m-%d %H:%M:%S.%e - %^%l%$ - %v");
 
-    config_path = "/home/puyu/Codes/vehicle-interaction-decision-making/config/default.yaml";
+    // config file path
+    config_path = project_path / "config" / config_path;
+    
+    // output path
+    if (save_flag) {
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
+        struct tm now_tm;
+        localtime_r(&now_time_t, &now_tm); 
+        std::stringstream ss;
+        ss << std::put_time(&now_tm, "%Y-%m-%d-%H-%M-%S");
+        output_path = output_path / ss.str();
+        if (!std::filesystem::exists(output_path)) {
+            std::filesystem::create_directories(output_path);
+        }
+    }
 
     run(rounds_num, config_path, output_path, show_animation, save_flag);
 
