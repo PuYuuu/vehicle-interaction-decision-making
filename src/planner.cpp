@@ -9,7 +9,6 @@ double MonteCarloTreeSearch::LAMDA = 0.9;
 double MonteCarloTreeSearch::WEIGHT_AVOID = 10;
 double MonteCarloTreeSearch::WEIGHT_SAFE = 0.2;
 double MonteCarloTreeSearch::WEIGHT_OFFROAD = 2;
-double MonteCarloTreeSearch::WEIGHT_VELOCITY = 10;
 double MonteCarloTreeSearch::WEIGHT_DIRECTION = 1;
 double MonteCarloTreeSearch::WEIGHT_DISTANCE = 0.1;
 
@@ -44,11 +43,6 @@ double MonteCarloTreeSearch::calc_cur_value(std::shared_ptr<Node> node, double l
     if (MonteCarloTreeSearch::is_opposite_direction(node->state, ego_box2d)) {
         direction = -1;
     }
-
-    int velocity = 0;
-    if (velocity < 0) {
-        velocity = -1;
-    }
     
     double distance = -(abs(x - node->goal_pose.x) + abs(y - node->goal_pose.y) +
                         1.5 * abs(yaw - node->goal_pose.yaw));
@@ -57,8 +51,7 @@ double MonteCarloTreeSearch::calc_cur_value(std::shared_ptr<Node> node, double l
                         MonteCarloTreeSearch::WEIGHT_SAFE * safe +
                         MonteCarloTreeSearch::WEIGHT_OFFROAD * offroad +
                         MonteCarloTreeSearch::WEIGHT_DISTANCE * distance +
-                        MonteCarloTreeSearch::WEIGHT_DIRECTION * direction +
-                        MonteCarloTreeSearch::WEIGHT_VELOCITY * velocity;
+                        MonteCarloTreeSearch::WEIGHT_DIRECTION * direction;
     double total_reward = last_node_value + pow(MonteCarloTreeSearch::LAMDA, (step - 1)) * cur_reward;
     node->value = total_reward;
 
@@ -109,7 +102,7 @@ std::shared_ptr<Node> MonteCarloTreeSearch::excute(std::shared_ptr<Node> root) {
         // 2. Random run to add node and get reward
         double reward = default_policy(expand_node);
         // 3. Update all passing nodes with reward
-        backup(expand_node, reward);
+        update(expand_node, reward);
     }
 
     return get_best_child(root, 0);
@@ -183,7 +176,7 @@ double MonteCarloTreeSearch::default_policy(std::shared_ptr<Node> node) {
     return node->value;
 }
 
-void MonteCarloTreeSearch::backup(std::shared_ptr<Node> node, double r) {
+void MonteCarloTreeSearch::update(std::shared_ptr<Node> node, double r) {
     while (node != nullptr) {
         node->visits += 1;
         node->reward += r;

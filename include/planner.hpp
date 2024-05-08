@@ -16,7 +16,6 @@ public:
     static double WEIGHT_AVOID;
     static double WEIGHT_SAFE;
     static double WEIGHT_OFFROAD;
-    static double WEIGHT_VELOCITY;
     static double WEIGHT_DIRECTION;
     static double WEIGHT_DISTANCE;
 
@@ -39,7 +38,6 @@ public:
         MonteCarloTreeSearch::WEIGHT_AVOID = cfg["weight_avoid"].as<double>();
         MonteCarloTreeSearch::WEIGHT_SAFE = cfg["weight_safe"].as<double>();
         MonteCarloTreeSearch::WEIGHT_OFFROAD = cfg["weight_offroad"].as<double>();
-        MonteCarloTreeSearch::WEIGHT_VELOCITY = cfg["weight_velocity"].as<double>();
         MonteCarloTreeSearch::WEIGHT_DIRECTION = cfg["weight_direction"].as<double>();
         MonteCarloTreeSearch::WEIGHT_DISTANCE = cfg["weight_distance"].as<double>();
     }
@@ -51,7 +49,7 @@ public:
     std::shared_ptr<Node> expand(std::shared_ptr<Node> node);
     std::shared_ptr<Node> get_best_child(std::shared_ptr<Node> node, double scalar);
     double default_policy(std::shared_ptr<Node> node);
-    void backup(std::shared_ptr<Node> node, double r);
+    void update(std::shared_ptr<Node> node, double r);
 
 };
 

@@ -46,3 +46,48 @@ void Vehicle::draw_vehicle(bool fill_mode /* = false */) {
         plt::fill(box2d_vec[0], box2d_vec[1], {{"color", color}, {"alpha", "0.5"}});
     }
 }
+
+bool VehicleList::is_all_get_target(void) {
+    bool all_get_target = std::all_of(vehicle_list.begin(), vehicle_list.end(), 
+                            [](const std::shared_ptr<Vehicle> vehicle) {return vehicle->is_get_target();});
+
+    return all_get_target;
+}
+
+bool VehicleList::is_any_collision(void) {
+    for (int i = 0; i < vehicle_list.size() - 1; ++i) {
+        for (int j = i + 1; j < vehicle_list.size(); ++j) {
+            if (utils::has_overlap(
+                    VehicleBase::get_box2d(vehicle_list[i]->state),
+                    VehicleBase::get_box2d(vehicle_list[j]->state))) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void VehicleList::push_back(std::shared_ptr<Vehicle> vehicle) {
+    vehicle_list.push_back(vehicle);
+}
+
+void VehicleList::pop_back(void) {
+    vehicle_list.pop_back();
+}
+
+std::vector<std::shared_ptr<Vehicle>> VehicleList::exclude(int ego_idx) {
+    std::shared_ptr<Vehicle> ego_vehicle = vehicle_list[ego_idx];
+    return exclude(ego_vehicle);
+}
+
+std::vector<std::shared_ptr<Vehicle>> VehicleList::exclude(std::shared_ptr<Vehicle> ego) {
+    std::vector<std::shared_ptr<Vehicle>> exclude_list;
+    for (std::shared_ptr<Vehicle> vehicle : vehicle_list) {
+        if (vehicle->name != ego->name) {
+            exclude_list.push_back(vehicle);
+        }
+    }
+    
+    return exclude_list;
+}

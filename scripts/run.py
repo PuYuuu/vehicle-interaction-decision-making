@@ -30,7 +30,8 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
 
     logging.info(f"rounds_num: {rounds_num}")
     env = EnvCrossroads(size = 25, lanewidth = 4.2)
-    max_per_iters = 20 / config['delta_t']
+    delta_t = config['delta_t']
+    max_simulation_time = config['max_simulation_time']
 
     # initialize
     VehicleBase.initialize(env, 5, 2, 8, 2.4)
@@ -67,21 +68,21 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
             logging.info(f"{vehicle.name} >>> init_x: {vehicle.state.x:.2f}, "
                          f"init_y: {vehicle.state.y:.2f}, init_v: {vehicle.state.v:.2f}")
 
-        cur_loop_count = 0
+        timestamp = 0.0
         round_start_time = time.time()
         while True:
             if vehicles.is_all_get_target:
                 round_elapsed_time = time.time() - round_start_time
                 logging.info(f"Round {iter} successed, "
-                             f"simulation time: {cur_loop_count * config['delta_t']} s"
+                             f"simulation time: {timestamp} s"
                              f", actual timecost: {round_elapsed_time:.3f} s")
                 succeed_count += 1
                 break
 
-            if vehicles.is_any_collision or cur_loop_count > max_per_iters:
+            if vehicles.is_any_collision or timestamp > max_simulation_time:
                 round_elapsed_time = time.time() - round_start_time
                 logging.info(f"Round {iter} failed, "
-                             f"simulation time: {cur_loop_count * config['delta_t']} s"
+                             f"simulation time: {timestamp} s"
                              f", actual timecost: {round_elapsed_time:.3f} s")
                 break
 
@@ -122,7 +123,7 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
                 plt.ylim(-25, 25)
                 plt.gca().set_aspect('equal')
                 plt.pause(0.01)
-            cur_loop_count += 1
+            timestamp += delta_t
 
         plt.cla()
         env.draw_env()

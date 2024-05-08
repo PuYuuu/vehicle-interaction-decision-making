@@ -15,7 +15,6 @@ class MonteCarloTreeSearch:
     WEIGHT_AVOID = 10
     WEIGHT_SAFE = 0.2
     WEIGHT_OFFROAD = 2
-    WEIGHT_VELOCITY = 10
     WEIGHT_DIRECTION = 1
     WEIGHT_DISTANCE = 0.1
 
@@ -36,7 +35,7 @@ class MonteCarloTreeSearch:
             # 2. Random run to add node and get reward
             reward = self.default_policy(expand_node)
             # 3. Update all passing nodes with reward
-            self.backup(expand_node, reward)
+            self.update(expand_node, reward)
 
         return self.get_best_child(root, 0)
 
@@ -62,7 +61,7 @@ class MonteCarloTreeSearch:
 
         return node.value
 
-    def backup(self, node: Node, r: float) -> None:
+    def update(self, node: Node, r: float) -> None:
         while node != None:
             node.visits += 1
             node.reward += r
@@ -121,10 +120,6 @@ class MonteCarloTreeSearch:
         if MonteCarloTreeSearch.is_opposite_direction(node.state, ego_box2d):
             direction = -1
 
-        velocity = 0
-        if velocity < 0:
-            velocity = -1
-
         distance = -(abs(x - node.goal_pos.x) + abs(y - node.goal_pos.y) + \
                      1.5 * abs(yaw - node.goal_pos.yaw))
 
@@ -132,8 +127,7 @@ class MonteCarloTreeSearch:
                      MonteCarloTreeSearch.WEIGHT_SAFE * safe + \
                      MonteCarloTreeSearch.WEIGHT_OFFROAD * offroad + \
                      MonteCarloTreeSearch.WEIGHT_DISTANCE * distance + \
-                     MonteCarloTreeSearch.WEIGHT_DIRECTION * direction + \
-                     MonteCarloTreeSearch.WEIGHT_VELOCITY * velocity
+                     MonteCarloTreeSearch.WEIGHT_DIRECTION * direction
 
         total_reward = last_node_value + MonteCarloTreeSearch.LAMDA ** (step - 1) * cur_reward
         node.value = total_reward
@@ -177,7 +171,6 @@ class MonteCarloTreeSearch:
         MonteCarloTreeSearch.WEIGHT_AVOID = cfg['weight_avoid']
         MonteCarloTreeSearch.WEIGHT_SAFE = cfg['weight_safe']
         MonteCarloTreeSearch.WEIGHT_OFFROAD = cfg['weight_offroad']
-        MonteCarloTreeSearch.WEIGHT_VELOCITY = cfg['weight_velocity']
         MonteCarloTreeSearch.WEIGHT_DIRECTION = cfg['weight_direction']
         MonteCarloTreeSearch.WEIGHT_DISTANCE = cfg['weight_distance']
 
