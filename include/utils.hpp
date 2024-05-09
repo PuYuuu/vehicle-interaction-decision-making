@@ -5,6 +5,7 @@
 #include <chrono>
 #include <vector>
 #include <memory>
+#include <random>
 #include <string>
 #include <algorithm>
 #include <stdexcept>
@@ -12,8 +13,38 @@
 #include <Eigen/Core>
 
 
-constexpr int ACTION_SIZE = 6;
 enum class Action {MAINTAIN, TURNLEFT, TURNRIGHT, ACCELERATE, DECELERATE, BRAKE};
+const std::vector<Action> ACTION_LIST = {
+    Action::MAINTAIN,   // (0, 0)
+    Action::TURNLEFT,   // (0, pi/4)
+    Action::TURNRIGHT,  // (0, -pi/4)
+    Action::ACCELERATE, // (2.5, 0)
+    Action::DECELERATE, // (-2.5, 0)
+    Action::BRAKE       // (-5.0, 0)
+};
+
+class Random {
+private:
+    static std::default_random_engine engine;
+
+    Random() = delete;
+    Random(const Random&) = delete;
+    Random& operator=(const Random&) = delete;
+    Random(Random&&) = delete;
+    Random& operator=(Random&&) = delete;
+public:
+    static int uniform(int _min, int _max);
+    static double uniform(double _min, double _max);
+    template <typename T>
+    static T choice(const std::vector<T>& vec) {
+        if (vec.empty()) {
+            throw std::runtime_error("Cannot select an element from an empty vector.");
+        }
+
+        int random_idx = Random::uniform(0, vec.size() - 1);
+        return vec[random_idx];
+    }
+};
 
 class TicToc {
 public:
@@ -191,7 +222,6 @@ public:
 namespace utils {
 
     std::string get_action_name(Action action);
-    Action get_random_action(void);
     Eigen::Vector2d get_action_value(Action act);
     bool has_overlap(Eigen::MatrixXd box2d_0, Eigen::MatrixXd box2d_1);
     State kinematic_propagate(State state, Eigen::Vector2d act, double dt);

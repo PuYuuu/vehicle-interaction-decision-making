@@ -1,5 +1,4 @@
 #include <cmath>
-#include <random>
 #include <string>
 #include <memory>
 #include <getopt.h>
@@ -29,9 +28,9 @@ static struct option long_options[] = {
     {"save_fig", no_argument, 0, 'f'},
 };
 
-std::unordered_map<int, spdlog::level::level_enum> LOG_LEVEL_DICT =
-    {{0, spdlog::level::trace}, {1, spdlog::level::debug}, {2, spdlog::level::info},
-     {3, spdlog::level::warn}, {4, spdlog::level::err}, {5, spdlog::level::critical}};
+std::unordered_map<std::string, spdlog::level::level_enum> LOG_LEVEL_DICT =
+    {{"trace", spdlog::level::trace}, {"debug", spdlog::level::debug}, {"info", spdlog::level::info},
+     {"warn", spdlog::level::warn}, {"err", spdlog::level::err}, {"critical", spdlog::level::critical}};
 
 void run(int rounds_num, std::filesystem::path config_path,
     std::filesystem::path save_path, bool show_animation, bool save_fig) {
@@ -53,17 +52,12 @@ void run(int rounds_num, std::filesystem::path config_path,
     MonteCarloTreeSearch::initialize(config);
     Node::initialize(config["max_step"].as<int>(), MonteCarloTreeSearch::calc_cur_value);
 
-    std::default_random_engine engine(std::random_device{}());
-    std::uniform_real_distribution<double> random_pos_0(-20, -12);
-    std::uniform_real_distribution<double> random_pos_1(12, 20);
-    std::uniform_real_distribution<double> random_velo(3, 5);
-
     uint64_t succeed_count = 0;
     for (uint64_t iter = 0; iter < rounds_num; ++iter) {
-        double init_y_0 = random_pos_0(engine);
-        double init_y_1 = random_pos_1(engine);
-        double init_v_0 = random_velo(engine);
-        double init_v_1 = random_velo(engine);
+        double init_y_0 = Random::uniform(-20.0, -12.0);
+        double init_y_1 = Random::uniform(12.0, 20.0);
+        double init_v_0 = Random::uniform(3.0, 5.0);
+        double init_v_1 = Random::uniform(3.0, 5.0);
 
         std::shared_ptr<Vehicle> vehicle_0 = std::make_shared<Vehicle>(
             "vehicle_0", State(env->lanewidth/2, init_y_0, M_PI_2, init_v_0), "blue", config);
@@ -74,7 +68,7 @@ void run(int rounds_num, std::filesystem::path config_path,
         vehicle_1->set_level(0);
         vehicle_0->set_target(State(-18, env->lanewidth / 2, M_PI, 0));
         vehicle_1->set_target(State(-env->lanewidth / 2, -18, 1.5 * M_PI, 0));
-        
+
         VehicleList vehicles({vehicle_0, vehicle_1});
 
         std::vector<State> vehicle_0_history = {vehicles[0]->state};
@@ -99,7 +93,7 @@ void run(int rounds_num, std::filesystem::path config_path,
 
             if ( vehicles.is_any_collision() || timestamp > max_simulation_time) {
                 spdlog::info(fmt::format(
-                        "Round {:d} failed, simulation time: {.3f} s, actual timecost: {.3f} s",
+                        "Round {:d} failed, simulation time: {:.3f} s, actual timecost: {:.3f} s",
                         iter, timestamp, total_cost_time.toc()));
                 break;
             }
@@ -115,7 +109,8 @@ void run(int rounds_num, std::filesystem::path config_path,
             vehicle_0_history.push_back(vehicle_0->state);
             vehicle_1_history.push_back(vehicle_1->state);
 
-            spdlog::debug(fmt::format("single step cost {:.3f} sec", iter_cost_time.toc()));            
+            spdlog::debug(fmt::format(
+                "simulation time {:.3f} step cost {:.3f} sec", timestamp, iter_cost_time.toc()));  
             
             StateList excepted_traj_1 = act_and_traj_1.second;
             StateList excepted_traj_0 = act_and_traj_0.second;
@@ -177,7 +172,7 @@ int main(int argc, char** argv) {
     std::filesystem::path config_path = "default.yaml";
     bool show_animation = true;
     bool save_flag = false;
-    int log_level = 2;      // info
+    std::string log_level = "info";     // info
 
     int opt, option_index = 0;
     while ((opt = getopt_long(argc, argv, "r:o:l:c:n:f:", long_options, &option_index)) != -1) {
@@ -189,7 +184,7 @@ int main(int argc, char** argv) {
                 output_path = utils::absolute_path(optarg);
                 break;
             case 'l':
-                log_level = std::stoi(optarg);
+                log_level = std::string(optarg);
                 break;
             case 'c':
                 config_path = optarg;
@@ -207,6 +202,7 @@ int main(int argc, char** argv) {
 
     spdlog::set_level(LOG_LEVEL_DICT[log_level]);
     spdlog::set_pattern("%Y-%m-%d %H:%M:%S.%e - %^%l%$ - %v");
+    spdlog::info("log level : " + log_level);
 
     // config file path
     config_path = project_path / "config" / config_path;

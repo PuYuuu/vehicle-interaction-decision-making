@@ -19,8 +19,8 @@ from vehicle import Vehicle, VehicleList
 from planner import MonteCarloTreeSearch
 
 
-LOG_LEVEL_DICT = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING,
-                  3: logging.ERROR, 4: logging.CRITICAL}
+LOG_LEVEL_DICT = {"debug": logging.DEBUG, "info": logging.INFO, "warning": logging.WARNING,
+                  "error": logging.ERROR, "critical": logging.CRITICAL}
 
 
 def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_fig:bool) -> None:
@@ -103,7 +103,7 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
             vehicle_1_history.append(vehicles[1].state)
 
             elapsed_time = time.time() - start_time
-            logging.debug(f"single step cost {elapsed_time:.6f} second")
+            logging.debug(f"simulation time {timestamp:.3f} step cost {elapsed_time:.6f} second")
 
             if not no_animation:
                 plt.cla()
@@ -148,10 +148,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--rounds', '-r', type=int, default=5, help='')
     parser.add_argument('--output_path', '-o', type=str, default=None, help='')
-    parser.add_argument('--log_level', '-l', type=int, default=1,
-                        help=f"0:logging.DEBUG\t1:logging.INFO\t"
-                             f"2:logging.WARNING\t3:logging.ERROR\t"
-                             f"4:logging.CRITICAL\t")
+    parser.add_argument('--log_level', '-l', type=str, default="info",
+                        help=f"debug:logging.DEBUG\tinfo:logging.INFO\t"
+                             f"warning:logging.WARNING\terror:logging.ERROR\t"
+                             f"critical:logging.CRITICAL\t")
     parser.add_argument('--config', '-c', type=str, default='default.yaml', help='')
     parser.add_argument('--no_animation', action='store_true', default=False, help='')
     parser.add_argument('--save_fig', action='store_true', default=False, help='')
@@ -175,6 +175,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=log_level, format=log_format, handlers=[logging.StreamHandler()])
     logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
+    logging.info(f"log level : {args.log_level}")
 
     project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     config_file_path = os.path.join(project_path, 'config', args.config)

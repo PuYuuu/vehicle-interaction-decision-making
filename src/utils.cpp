@@ -1,6 +1,5 @@
 #include <cmath>
 #include <array>
-#include <random>
 #include <unordered_map>
 
 #include <spdlog/spdlog.h>
@@ -10,6 +9,8 @@
 int Node::MAX_LEVEL = 6;
 double (*Node::calc_value_callback)(std::shared_ptr<Node>, double) = nullptr;
 
+std::default_random_engine Random::engine(std::random_device{}());
+
 constexpr std::array<const char*, 6> ACTIONNAMES = {
     "MAINTAIN",
     "TURNLEFT",
@@ -18,6 +19,16 @@ constexpr std::array<const char*, 6> ACTIONNAMES = {
     "DECELERATE",
     "BRAKE"
 };
+
+int Random::uniform(int _min, int _max) {
+    std::uniform_int_distribution dist(_min, _max);
+    return dist(Random::engine);
+}
+
+double Random::uniform(double _min, double _max) {
+    std::uniform_real_distribution<double> dist(_min, _max);
+    return dist(Random::engine);
+}
 
 Node::Node(State _state, int _level, std::shared_ptr<Node> p,
             Action act, StateList others, State goal) :
@@ -33,7 +44,7 @@ bool Node::is_terminal(void) {
 }
 
 bool Node::is_fully_expanded(void) {
-    return children.size() >= ACTION_SIZE;
+    return children.size() >= ACTION_LIST.size();
 }
 
 std::shared_ptr<Node> Node::add_child(
@@ -50,7 +61,7 @@ std::shared_ptr<Node> Node::add_child(
 }
 
 std::shared_ptr<Node> Node::next_node(double delta_t, StateList others) {
-    Action next_action = utils::get_random_action();
+    Action next_action = Random::choice(ACTION_LIST);
     State new_state = utils::kinematic_propagate(state, utils::get_action_value(next_action), delta_t);
     std::shared_ptr<Node> node = std::make_shared<Node>(
         new_state, cur_level + 1, nullptr, next_action, others, goal_pose);
@@ -73,14 +84,6 @@ namespace utils {
         };
 
         return ACTION_MAP[act];
-    }
-
-    Action get_random_action(void) {
-        std::mt19937 engine(std::random_device{}());
-        std::uniform_int_distribution<int> dist(0, ACTION_SIZE - 1);
-        int random_number = dist(engine);
-
-        return static_cast<Action>(random_number);
     }
 
     bool has_overlap(Eigen::MatrixXd box2d_0, Eigen::MatrixXd box2d_1) {

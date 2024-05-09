@@ -112,6 +112,8 @@ std::shared_ptr<Node> MonteCarloTreeSearch::tree_policy(std::shared_ptr<Node> no
     while (node->is_terminal() == false) {
         if (node->children.empty()) {
             return expand(node);
+        } else if (Random::uniform(0.0, 1.0) < 0.5) {
+            node = get_best_child(node, MonteCarloTreeSearch::EXPLORATE_RATE);
         } else {
             if (node->is_fully_expanded() == false) {
                 return expand(node);
@@ -130,9 +132,9 @@ std::shared_ptr<Node> MonteCarloTreeSearch::expand(std::shared_ptr<Node> node) {
         tried_actions.insert(child->action);
     }
 
-    Action next_action = utils::get_random_action();
+    Action next_action = Random::choice(ACTION_LIST);
     while (!node->is_terminal() && tried_actions.count(next_action)) {
-        next_action = utils::get_random_action();
+        next_action = Random::choice(ACTION_LIST);
     }
     StateList other_states;
     State cur_other_state = other_predict_traj[node->cur_level + 1];
@@ -161,7 +163,7 @@ std::shared_ptr<Node> MonteCarloTreeSearch::get_best_child(std::shared_ptr<Node>
         return node;
     }
 
-    return best_children[0];
+    return Random::choice(best_children);
 }
 
 double MonteCarloTreeSearch::default_policy(std::shared_ptr<Node> node) {
