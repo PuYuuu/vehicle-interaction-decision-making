@@ -19,6 +19,7 @@ class Vehicle(VehicleBase):
         self.dt: float = cfg['delta_t']
         self.cur_action: Optional[utils.Action] = None
         self.excepted_traj: Optional[utils.StateList] = None
+        self.footprint: List[utils.State] = [state]
 
         self.planner = KLevelPlanner(cfg)
 

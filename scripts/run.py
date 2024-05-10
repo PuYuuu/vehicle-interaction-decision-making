@@ -60,9 +60,6 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
 
         vehicles = VehicleList([vehicle_0, vehicle_1])
 
-        vehicle_0_history: List[State] = [vehicles[0].state]
-        vehicle_1_history: List[State] = [vehicles[1].state]
-
         logging.info(f"\n================== Round {iter} ==================")
         for vehicle in vehicles:
             logging.info(f"{vehicle.name} >>> init_x: {vehicle.state.x:.2f}, "
@@ -98,9 +95,7 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
                 if not vehicle.is_get_target:
                     vehicle.state = \
                         kinematic_propagate(vehicle.state, vehicle.cur_action.value, config['delta_t'])
- 
-            vehicle_0_history.append(vehicles[0].state)
-            vehicle_1_history.append(vehicles[1].state)
+                    vehicle.footprint.append(vehicle.state)
 
             elapsed_time = time.time() - start_time
             logging.debug(f"simulation time {timestamp:.3f} step cost {elapsed_time:.6f} second")
@@ -121,20 +116,21 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
                 plt.text(10, 12, action_text, fontsize=10, color='red')
                 plt.xlim(-25, 25)
                 plt.ylim(-25, 25)
+                plt.title(f"Round {iter + 1} / {rounds_num}")
                 plt.gca().set_aspect('equal')
                 plt.pause(0.01)
             timestamp += delta_t
 
         plt.cla()
         env.draw_env()
-        for history in vehicle_0_history:
-            tmp = Vehicle("tmp", history, "blue", config)
-            tmp.draw_vehicle(True)
-        for history in vehicle_1_history:
-            tmp = Vehicle("tmp", history, "red", config)
-            tmp.draw_vehicle(True)
+        for vehicle in vehicles:
+            tmp = Vehicle("tmp", State(), vehicle.color, config)
+            for state in vehicle.footprint:
+                tmp.state = state
+                tmp.draw_vehicle(True)
         plt.xlim(-25, 25)
         plt.ylim(-25, 25)
+        plt.title(f"Round {iter + 1} / {rounds_num}")
         plt.gca().set_aspect('equal')
         if save_fig:
             plt.savefig(os.path.join(save_path, f"round_{iter}.svg"), format='svg', dpi=600)

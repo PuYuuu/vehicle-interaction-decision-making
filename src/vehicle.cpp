@@ -6,19 +6,19 @@
 
 namespace plt = matplotlibcpp;
 
-std::pair<Action, StateList> Vehicle::excute(VehicleBase other) {
-    std::pair<Action, StateList> act_and_traj;
-
+void Vehicle::excute(VehicleBase other) {
     if (is_get_target()) {
         have_got_target = true;
         state.v = 0;
-        act_and_traj.first = Action::MAINTAIN;
-        act_and_traj.second = StateList();
+        cur_action = Action::MAINTAIN;
+        excepted_traj = StateList();
     } else {
-        act_and_traj = planner.planning(*this, other);
+        std::pair<Action, StateList> act_and_traj = planner.planning(*this, other);
+        cur_action = act_and_traj.first;
+        excepted_traj = act_and_traj.second;
+        state = utils::kinematic_propagate(state, utils::get_action_value(cur_action), dt);
+        footprint.push_back(state);
     }
-
-    return act_and_traj;
 }
 
 void Vehicle::draw_vehicle(bool fill_mode /* = false */) {

@@ -98,6 +98,7 @@ private:
     }
 public:
     StateList() {
+        states.clear();
         state_list_trans.resize(4);
     }
     StateList(const std::vector<State>& st) {

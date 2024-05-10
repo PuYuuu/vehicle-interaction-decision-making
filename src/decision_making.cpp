@@ -1,6 +1,7 @@
 #include <cmath>
 #include <string>
 #include <memory>
+#include <thread>
 #include <getopt.h>
 #include <filesystem>
 #include <unordered_map>
@@ -71,9 +72,6 @@ void run(int rounds_num, std::filesystem::path config_path,
 
         VehicleList vehicles({vehicle_0, vehicle_1});
 
-        std::vector<State> vehicle_0_history = {vehicles[0]->state};
-        std::vector<State> vehicle_1_history = {vehicles[1]->state};
-
         spdlog::info(fmt::format("================== Round {} ==================", iter));
         for (auto vehicle : vehicles) {
             spdlog::info(fmt::format("{} >>> init_x: {:.2f}, init_y: {:.2f}, init_v: {:.2f}",
@@ -99,62 +97,63 @@ void run(int rounds_num, std::filesystem::path config_path,
             }
 
             TicToc iter_cost_time;
-            auto act_and_traj_0 = vehicle_0->excute(*vehicle_1);
-            auto act_and_traj_1 = vehicle_1->excute(*vehicle_0);
+            std::vector<std::thread> threads;
+            for (std::shared_ptr<Vehicle>& vehicle : vehicles) {
+                std::thread thread([&vehicle, &vehicles]() {
+                    vehicle->excute(*(vehicles.exclude(vehicle)[0]));
+                });
+                threads.emplace_back(std::move(thread));
+            }
 
-            vehicle_0->state = utils::kinematic_propagate(
-                                vehicle_0->state, utils::get_action_value(act_and_traj_0.first), delta_t);
-            vehicle_1->state = utils::kinematic_propagate(
-                                vehicle_1->state, utils::get_action_value(act_and_traj_1.first), delta_t);
-            vehicle_0_history.push_back(vehicle_0->state);
-            vehicle_1_history.push_back(vehicle_1->state);
+            for (auto& thread : threads) {
+                if (thread.joinable()) {
+                    thread.join();
+                }
+            }
 
             spdlog::debug(fmt::format(
                 "simulation time {:.3f} step cost {:.3f} sec", timestamp, iter_cost_time.toc()));  
-            
-            StateList excepted_traj_1 = act_and_traj_1.second;
-            StateList excepted_traj_0 = act_and_traj_0.second;
-            auto traj_vec_1 = excepted_traj_1.to_vector();
-            auto traj_vec_0 = excepted_traj_0.to_vector();
 
             if (show_animation) {
                 plt::cla();
                 env->draw_env();
-                for (auto vehicle : vehicles) {
+                for (std::shared_ptr<Vehicle> vehicle : vehicles) {
+                    auto excepted_traj = vehicle->excepted_traj.to_vector();
                     vehicle->draw_vehicle();
                     plt::plot({vehicle->target.x}, {vehicle->target.y}, {{"marker", "x"}, {"color", vehicle->color}});
+                    plt::plot(excepted_traj[0], excepted_traj[1], {{"color", vehicle->color}, {"linewidth", "1"}});
                 }
-                plt::plot(traj_vec_0[0], traj_vec_0[1], {{"color", vehicle_0->color}, {"linewidth", "1"}});
-                plt::plot(traj_vec_1[0], traj_vec_1[1], {{"color", vehicle_1->color}, {"linewidth", "1"}});
                 plt::text(10, -15, fmt::format("v = {:.2f} m/s", vehicle_0->state.v), {{"color", vehicle_0->color}});
                 plt::text(10,  15, fmt::format("v = {:.2f} m/s", vehicle_1->state.v), {{"color", vehicle_1->color}});
                 plt::text(10, -18, fmt::format("{}",
-                            utils::get_action_name(act_and_traj_0.first)), {{"color", vehicle_0->color}});
+                            utils::get_action_name(vehicle_0->cur_action)), {{"color", vehicle_0->color}});
                 plt::text(10,  12, fmt::format("{}",
-                            utils::get_action_name(act_and_traj_1.first)), {{"color", vehicle_1->color}});
+                            utils::get_action_name(vehicle_1->cur_action)), {{"color", vehicle_1->color}});
                 plt::xlim(-25.0, 25.0);
                 plt::ylim(-25.0, 25.0);
+                plt::title(fmt::format("Round {} / {}", iter + 1, rounds_num));
                 plt::set_aspect_equal();
-                plt::pause(1);
+                plt::pause(0.01);
             }
             timestamp += delta_t;
         }
 
         plt::clf();
         env->draw_env();
-        for (auto history : vehicle_0_history) {
-            Vehicle tmp("tmp", history, "blue", config);
-            tmp.draw_vehicle(true);
-        }
-        for (auto history : vehicle_1_history) {
-            Vehicle tmp("tmp", history, "red", config);
-            tmp.draw_vehicle(true);
+
+        for (const auto& vehicle : vehicles) {
+            Vehicle tmp("tmp", State(), vehicle->color, config);
+            for (const State& state : vehicle->footprint) {
+                tmp.state = state;
+                tmp.draw_vehicle(true);
+            }
         }
         plt::xlim(-25, 25);
         plt::ylim(-25, 25);
+        plt::title(fmt::format("Round {} / {}", iter + 1, rounds_num));
         plt::set_aspect_equal();
         if (save_fig) {
-            plt::save((save_path/(std::to_string(iter)+".svg")).string(), 600);
+            plt::save((save_path / ( "Round_" + std::to_string(iter) + ".svg")).string(), 600);
         }
     }
 

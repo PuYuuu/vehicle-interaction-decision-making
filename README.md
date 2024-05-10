@@ -46,7 +46,7 @@ For specific parameter descriptions, please use `python scripts/run.py -h` to vi
 
 ### 🦏Run using C++
 
-Running C++ requires python dependencies (1.1.1)
+Running C++ requires python dependencies, refer to **1.1.1**. By the way, **the C++ implement of this repository is more than 10 times faster🚀 than the Python**. Therefore, strongly recommend you do further development on the basis of C++.
 
 #### 1.2.1 Requirement
 

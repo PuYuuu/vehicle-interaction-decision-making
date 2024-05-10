@@ -19,21 +19,24 @@ private:
 public:
     Action cur_action;
     StateList excepted_traj;
+    std::vector<State> footprint;
     Eigen::Matrix<double, 2, 5, Eigen::RowMajor> vehicle_box2d;
     Eigen::Matrix<double, 2, 5, Eigen::RowMajor> safezone;
 
     Vehicle(std::string _name, State _st, std::string _c, const YAML::Node& cfg) :
         VehicleBase(_name, _st, _c) {
+        footprint.clear();
         vehicle_box2d = VehicleBase::get_box2d(state);
         safezone = VehicleBase::get_safezone(state);
         dt = cfg["delta_t"].as<double>();
         planner = KLevelPlanner(cfg);
         cur_action = Action::MAINTAIN;
         excepted_traj = StateList();
+        footprint.push_back(_st);
     }
     ~Vehicle() {}
 
-    std::pair<Action, StateList> excute(VehicleBase other);
+    void excute(VehicleBase other);
     void draw_vehicle(bool fill_mode = false);
     bool operator==(const Vehicle& other) const {
         return name == other.name;
