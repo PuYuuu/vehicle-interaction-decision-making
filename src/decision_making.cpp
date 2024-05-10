@@ -48,29 +48,24 @@ void run(int rounds_num, std::filesystem::path config_path,
     // initialize
     double delta_t = config["delta_t"].as<double>();
     double max_simulation_time = config["max_simulation_time"].as<double>();
-    std::shared_ptr<EnvCrossroads> env = std::make_shared<EnvCrossroads>(25, 4);
+    double map_size = config["map_size"].as<double>();
+    double lane_width = config["lane_width"].as<double>();
+
+    std::shared_ptr<EnvCrossroads> env = std::make_shared<EnvCrossroads>(map_size, lane_width);
     VehicleBase::initialize(env, 5, 2, 8, 2.4);
     MonteCarloTreeSearch::initialize(config);
     Node::initialize(config["max_step"].as<int>(), MonteCarloTreeSearch::calc_cur_value);
 
+    VehicleList vehicles;
+    for (const auto& yaml_node : config["vehicle_list"]) {
+        std::string vehicle_name = yaml_node.first.as<std::string>();
+        std::shared_ptr<Vehicle> vehicle = std::make_shared<Vehicle>(vehicle_name, config);
+        vehicles.push_back(vehicle);
+    }
+
     uint64_t succeed_count = 0;
     for (uint64_t iter = 0; iter < rounds_num; ++iter) {
-        double init_y_0 = Random::uniform(-20.0, -12.0);
-        double init_y_1 = Random::uniform(12.0, 20.0);
-        double init_v_0 = Random::uniform(3.0, 5.0);
-        double init_v_1 = Random::uniform(3.0, 5.0);
-
-        std::shared_ptr<Vehicle> vehicle_0 = std::make_shared<Vehicle>(
-            "vehicle_0", State(env->lanewidth/2, init_y_0, M_PI_2, init_v_0), "blue", config);
-        std::shared_ptr<Vehicle> vehicle_1 = std::make_shared<Vehicle>(
-            "vehicle_1", State(-env->lanewidth/2, init_y_1, -M_PI_2, init_v_1), "red", config);
-
-        vehicle_0->set_level(1);
-        vehicle_1->set_level(0);
-        vehicle_0->set_target(State(-18, env->lanewidth / 2, M_PI, 0));
-        vehicle_1->set_target(State(-env->lanewidth / 2, -18, 1.5 * M_PI, 0));
-
-        VehicleList vehicles({vehicle_0, vehicle_1});
+        vehicles.reset();
 
         spdlog::info(fmt::format("================== Round {} ==================", iter));
         for (auto vehicle : vehicles) {
@@ -122,15 +117,15 @@ void run(int rounds_num, std::filesystem::path config_path,
                     vehicle->draw_vehicle();
                     plt::plot({vehicle->target.x}, {vehicle->target.y}, {{"marker", "x"}, {"color", vehicle->color}});
                     plt::plot(excepted_traj[0], excepted_traj[1], {{"color", vehicle->color}, {"linewidth", "1"}});
+                    plt::text(vehicle->vis_text_pos.x, vehicle->vis_text_pos.y + 3,
+                                fmt::format("level {:d}", vehicle->level), {{"color", vehicle->color}});
+                    plt::text(vehicle->vis_text_pos.x, vehicle->vis_text_pos.y,
+                                fmt::format("v = {:.2f} m/s", vehicle->state.v), {{"color", vehicle->color}});
+                    plt::text(vehicle->vis_text_pos.x, vehicle->vis_text_pos.y - 3,
+                                fmt::format("{}", utils::get_action_name(vehicle->cur_action)), {{"color", vehicle->color}});
                 }
-                plt::text(10, -15, fmt::format("v = {:.2f} m/s", vehicle_0->state.v), {{"color", vehicle_0->color}});
-                plt::text(10,  15, fmt::format("v = {:.2f} m/s", vehicle_1->state.v), {{"color", vehicle_1->color}});
-                plt::text(10, -18, fmt::format("{}",
-                            utils::get_action_name(vehicle_0->cur_action)), {{"color", vehicle_0->color}});
-                plt::text(10,  12, fmt::format("{}",
-                            utils::get_action_name(vehicle_1->cur_action)), {{"color", vehicle_1->color}});
-                plt::xlim(-25.0, 25.0);
-                plt::ylim(-25.0, 25.0);
+                plt::xlim(-map_size, map_size);
+                plt::ylim(-map_size, map_size);
                 plt::title(fmt::format("Round {} / {}", iter + 1, rounds_num));
                 plt::set_aspect_equal();
                 plt::pause(0.01);
@@ -141,17 +136,19 @@ void run(int rounds_num, std::filesystem::path config_path,
         plt::clf();
         env->draw_env();
 
-        for (const auto& vehicle : vehicles) {
-            Vehicle tmp("tmp", State(), vehicle->color, config);
+        for (std::shared_ptr<Vehicle>& vehicle : vehicles) {
             for (const State& state : vehicle->footprint) {
-                tmp.state = state;
-                tmp.draw_vehicle(true);
+                vehicle->state = state;
+                vehicle->draw_vehicle(true);
             }
+            plt::text(vehicle->vis_text_pos.x, vehicle->vis_text_pos.y + 3,
+                        fmt::format("level {:d}", vehicle->level), {{"color", vehicle->color}});
         }
-        plt::xlim(-25, 25);
-        plt::ylim(-25, 25);
+        plt::xlim(-map_size, map_size);
+        plt::ylim(-map_size, map_size);
         plt::title(fmt::format("Round {} / {}", iter + 1, rounds_num));
         plt::set_aspect_equal();
+        plt::pause(1);
         if (save_fig) {
             plt::save((save_path / ( "Round_" + std::to_string(iter) + ".svg")).string(), 600);
         }

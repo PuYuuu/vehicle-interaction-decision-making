@@ -58,3 +58,24 @@ vehicle_list:
     text:
       x: 10
       y: 15
+  vehilce_2:
+    level: 2
+    color: "green"
+    init:
+      x:
+        min: -20
+        max: -12
+      y:
+        min: -2
+        max: -2
+      yaw: 0
+      v:
+        min: 3
+        max: 5
+    target:
+      x: 18
+      y: -2
+      yaw: 0
+    text:
+      x: -20
+      y: -15

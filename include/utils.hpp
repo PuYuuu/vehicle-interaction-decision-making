@@ -99,9 +99,14 @@ private:
 public:
     StateList() {
         states.clear();
+        state_list.clear();
+        state_list_trans.clear();
         state_list_trans.resize(4);
     }
     StateList(const std::vector<State>& st) {
+        states.clear();
+        state_list.clear();
+        state_list_trans.clear();
         state_list_trans.resize(4);
 
         for (const State& s : st) {

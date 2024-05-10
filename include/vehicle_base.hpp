@@ -23,13 +23,13 @@ public:
 
     std::string name;
     State state;
-    std::string color;
     State target;
     int level;
     bool have_got_target;
 
-    VehicleBase(std::string _name, State _st, std::string _c) :
-        name(_name), state(_st), color(_c), level(0), have_got_target(false) {
+    VehicleBase(std::string _name) :
+        name(_name), level(0), have_got_target(false) {
+        state = State(0, 0, 0, 0);
         target = State(0, 0, 0, 0);
     }
     ~VehicleBase() {};

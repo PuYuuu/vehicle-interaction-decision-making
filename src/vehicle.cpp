@@ -6,6 +6,45 @@
 
 namespace plt = matplotlibcpp;
 
+Vehicle::Vehicle(
+    std::string _name, const YAML::Node& cfg) : VehicleBase(_name) {
+    YAML::Node vehicle_info = cfg["vehicle_list"][_name];
+    level = vehicle_info["level"].as<int>();
+    color = vehicle_info["color"].as<std::string>();
+    init_x_min = vehicle_info["init"]["x"]["min"].as<double>();
+    init_x_max = vehicle_info["init"]["x"]["max"].as<double>();
+    init_y_min = vehicle_info["init"]["y"]["min"].as<double>();
+    init_y_max = vehicle_info["init"]["y"]["max"].as<double>();
+    init_v_min = vehicle_info["init"]["v"]["min"].as<double>();
+    init_v_max = vehicle_info["init"]["v"]["max"].as<double>();
+    init_yaw = vehicle_info["init"]["yaw"].as<double>();
+    target.x = vehicle_info["target"]["x"].as<double>();
+    target.y = vehicle_info["target"]["y"].as<double>();
+    target.yaw = vehicle_info["target"]["yaw"].as<double>();
+    vis_text_pos.x = vehicle_info["text"]["x"].as<double>();
+    vis_text_pos.y = vehicle_info["text"]["y"].as<double>();
+
+    vehicle_box2d = VehicleBase::get_box2d(state);
+    safezone = VehicleBase::get_safezone(state);
+    dt = cfg["delta_t"].as<double>();
+    planner = KLevelPlanner(cfg);
+
+    reset();
+}
+
+void Vehicle::reset(void) {
+    footprint.clear();
+    cur_action = Action::MAINTAIN;
+    excepted_traj = StateList();
+    have_got_target = false;
+
+    state.x = Random::uniform(init_x_min, init_x_max);
+    state.y = Random::uniform(init_y_min, init_y_max);
+    state.v = Random::uniform(init_v_min, init_v_max);
+    state.yaw = init_yaw;
+    footprint.push_back(state);
+}
+
 void Vehicle::excute(VehicleBase other) {
     if (is_get_target()) {
         have_got_target = true;
@@ -44,6 +83,12 @@ void Vehicle::draw_vehicle(bool fill_mode /* = false */) {
         plt::plot(head_vec[0], head_vec[1], color);
     } else {
         plt::fill(box2d_vec[0], box2d_vec[1], {{"color", color}, {"alpha", "0.5"}});
+    }
+}
+
+void VehicleList::reset(void) {
+    for (std::shared_ptr<Vehicle>& vehicle : vehicle_list) {
+        vehicle->reset();
     }
 }
 

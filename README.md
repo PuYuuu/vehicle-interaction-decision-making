@@ -2,7 +2,9 @@
 
 The repository implements the decision-making of multiple vehicles at intersections based on level-k game, and uses MCTS to accelerate search. The code is fully implemented in C++ and Python respectively. 
 
-![](./img/sample.png)
+<div align=center>
+<img src="./img/sample-2.gif" width="320" height="320" />
+</div>
 
 ## How to run🏃‍♂️
 
