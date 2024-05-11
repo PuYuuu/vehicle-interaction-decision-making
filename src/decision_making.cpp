@@ -39,7 +39,7 @@ void run(int rounds_num, std::filesystem::path config_path,
     spdlog::info(fmt::format("config path: {}", config_path.string()));
     try {
         config = YAML::LoadFile(config_path.string());
-        spdlog::info(fmt::format("config parameters:\n{}", YAML::Dump(config)));
+        // spdlog::info(fmt::format("config parameters:\n{}", YAML::Dump(config)));
     } catch (const YAML::Exception& e) {
         spdlog::error(fmt::format("Error parsing YAML file: {}", e.what()));
         return ;
@@ -95,7 +95,7 @@ void run(int rounds_num, std::filesystem::path config_path,
             std::vector<std::thread> threads;
             for (std::shared_ptr<Vehicle>& vehicle : vehicles) {
                 std::thread thread([&vehicle, &vehicles]() {
-                    vehicle->excute(*(vehicles.exclude(vehicle)[0]));
+                    vehicle->excute(vehicles.exclude(vehicle));
                 });
                 threads.emplace_back(std::move(thread));
             }

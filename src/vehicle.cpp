@@ -45,14 +45,14 @@ void Vehicle::reset(void) {
     footprint.push_back(state);
 }
 
-void Vehicle::excute(VehicleBase other) {
+void Vehicle::excute(std::vector<VehicleBase> others) {
     if (is_get_target()) {
         have_got_target = true;
         state.v = 0;
         cur_action = Action::MAINTAIN;
         excepted_traj = StateList();
     } else {
-        std::pair<Action, StateList> act_and_traj = planner.planning(*this, other);
+        std::pair<Action, StateList> act_and_traj = planner.planning(*this, others);
         cur_action = act_and_traj.first;
         excepted_traj = act_and_traj.second;
         state = utils::kinematic_propagate(state, utils::get_action_value(cur_action), dt);
@@ -121,16 +121,16 @@ void VehicleList::pop_back(void) {
     vehicle_list.pop_back();
 }
 
-std::vector<std::shared_ptr<Vehicle>> VehicleList::exclude(int ego_idx) {
+std::vector<VehicleBase> VehicleList::exclude(int ego_idx) {
     std::shared_ptr<Vehicle> ego_vehicle = vehicle_list[ego_idx];
     return exclude(ego_vehicle);
 }
 
-std::vector<std::shared_ptr<Vehicle>> VehicleList::exclude(std::shared_ptr<Vehicle> ego) {
-    std::vector<std::shared_ptr<Vehicle>> exclude_list;
+std::vector<VehicleBase> VehicleList::exclude(std::shared_ptr<Vehicle> ego) {
+    std::vector<VehicleBase> exclude_list;
     for (std::shared_ptr<Vehicle> vehicle : vehicle_list) {
         if (vehicle->name != ego->name) {
-            exclude_list.push_back(vehicle);
+            exclude_list.push_back(*vehicle);
         }
     }
     

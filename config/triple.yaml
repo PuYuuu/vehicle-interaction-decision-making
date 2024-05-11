@@ -59,7 +59,7 @@ vehicle_list:
       x: 10
       y: 15
   vehilce_2:
-    level: 2
+    level: 0
     color: "green"
     init:
       x:

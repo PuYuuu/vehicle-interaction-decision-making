@@ -36,7 +36,7 @@ public:
     ~Vehicle() {}
 
     void reset(void);
-    void excute(VehicleBase other);
+    void excute(std::vector<VehicleBase> others);
     void draw_vehicle(bool fill_mode = false);
     bool operator==(const Vehicle& other) const {
         return name == other.name;
@@ -65,8 +65,8 @@ public:
     void push_back(std::shared_ptr<Vehicle> vehicle);
     void pop_back(void);
     void reset(void);
-    std::vector<std::shared_ptr<Vehicle>> exclude(int ego_idx);
-    std::vector<std::shared_ptr<Vehicle>> exclude(std::shared_ptr<Vehicle> ego);
+    std::vector<VehicleBase> exclude(int ego_idx);
+    std::vector<VehicleBase> exclude(std::shared_ptr<Vehicle> ego);
     std::shared_ptr<Vehicle> operator[](size_t index) {
         return vehicle_list[index];
     }

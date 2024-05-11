@@ -7,7 +7,8 @@
 #include "utils.hpp"
 
 int Node::MAX_LEVEL = 6;
-double (*Node::calc_value_callback)(std::shared_ptr<Node>, double) = nullptr;
+// double (*Node::calc_value_callback)(std::shared_ptr<Node>, double) = nullptr;
+std::function<double(std::shared_ptr<Node>, double)> Node::calc_value_callback;
 
 std::default_random_engine Random::engine(std::random_device{}());
 
@@ -54,7 +55,11 @@ std::shared_ptr<Node> Node::add_child(
         new_state, cur_level + 1, p, next_action, others, goal_pose);
     child->actions = actions;
     child->actions.push_back(next_action);
-    Node::calc_value_callback(child, value);
+    if (Node::calc_value_callback) {
+        Node::calc_value_callback(child, value);
+    } else {
+        spdlog::error("Node::calc_value_callback is null !");
+    }
     children.push_back(child);
 
     return child;
@@ -65,7 +70,11 @@ std::shared_ptr<Node> Node::next_node(double delta_t, StateList others) {
     State new_state = utils::kinematic_propagate(state, utils::get_action_value(next_action), delta_t);
     std::shared_ptr<Node> node = std::make_shared<Node>(
         new_state, cur_level + 1, nullptr, next_action, others, goal_pose);
-    Node::calc_value_callback(node, value);
+    if (Node::calc_value_callback) {
+        Node::calc_value_callback(node, value);
+    } else {
+        spdlog::error("Node::calc_value_callback is null !");
+    }
 
     return node;
 }
@@ -138,10 +147,10 @@ namespace utils {
         next_state.v = state.v + acc * dt;
         next_state.yaw = state.yaw + omega * dt;
 
-        if (next_state.yaw > 2 * M_PI) {
+        while (next_state.yaw > 2 * M_PI) {
             next_state.yaw -= 2 * M_PI;
         }
-        if (next_state.yaw < 0) {
+        while (next_state.yaw < 0) {
             next_state.yaw += 2 * M_PI;
         }
 
@@ -153,7 +162,6 @@ namespace utils {
 
         return next_state;
     }
-
 
     std::string absolute_path(std::string path)
     {

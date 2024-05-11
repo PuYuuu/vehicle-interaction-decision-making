@@ -3,12 +3,15 @@
 The repository implements the decision-making of multiple vehicles at intersections based on level-k game, and uses MCTS to accelerate search. The code is fully implemented in C++ and Python respectively. 
 
 <div align=center>
-<img src="./img/sample-2.gif" width="320" height="320" />
+  <tr>
+    <td><img src="./img/sample-2.gif" width="320"/></a></td>
+    <td><img src="./img/sample-3.gif" width="320"/></a></td>
+  </tr>
 </div>
 
 ## How to run🏃‍♂️
 
-Clone the repository to your local path:
+Clone the repository to local path:
 
 ```shell
 git clone git@github.com:PuYuuu/vehicle-interaction-decision-making.git
@@ -38,13 +41,13 @@ Firstly, you can run it directly using the default parameters.
 python scripts/run.py
 ```
 
-Or manually specify parameters for example:
+Or specify parameters for example:
 
 ```shell
-python scripts/run.py -r 5 --log_level debug --save_fig
+python scripts/run.py -r 5 --log_level debug --config triple.yaml --save_fig
 ```
 
-For specific parameter descriptions, please use `python scripts/run.py -h` to view.
+For detailed usage help, use `python scripts/run.py -h` to view.
 
 ### 🦏Run using C++
 
@@ -52,11 +55,11 @@ Running C++ requires python dependencies, refer to **1.1.1**. By the way, **the 
 
 #### 1.2.1 Requirement
 
-1. Install `fmt` for string formatting , `spdlog` for log printing :
+1. Install `eigen3` for matrix calculation, `fmt` for string format , and `spdlog` for log print :
 
 ```shell
 sudo apt update
-sudo apt install libspdlog-dev libfmt-dev
+sudo apt install libeigen3-dev libspdlog-dev libfmt-dev
 ```
 
 2. Install  `yaml-cpp` for parsing yaml file :

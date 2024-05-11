@@ -9,6 +9,7 @@
 #include <string>
 #include <algorithm>
 #include <stdexcept>
+#include <functional>
 
 #include <Eigen/Core>
 
@@ -195,7 +196,8 @@ private:
     /* data */
 public:
     static int MAX_LEVEL;
-    static double (*calc_value_callback)(std::shared_ptr<Node>, double);
+    // static double (*calc_value_callback)(std::shared_ptr<Node>, double);
+    static std::function<double(std::shared_ptr<Node>, double)> calc_value_callback;
 
     State state;
     double value;

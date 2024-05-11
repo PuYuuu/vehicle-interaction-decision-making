@@ -20,14 +20,14 @@ public:
     static double WEIGHT_DISTANCE;
 
     VehicleBase ego_vehicle;
-    VehicleBase other_vehicle;
-    StateList other_predict_traj;
+    std::vector<VehicleBase> other_vehicles;
+    std::vector<StateList> other_predict_traj;
     uint64_t computation_budget;
     double dt;
 
-    MonteCarloTreeSearch(const VehicleBase& ego, const VehicleBase& other,
-                 const StateList& other_traj, const YAML::Node& cfg) :
-                 ego_vehicle(ego), other_vehicle(other), other_predict_traj(other_traj) {
+    MonteCarloTreeSearch(const VehicleBase& ego, const std::vector<VehicleBase>& others,
+                 const std::vector<StateList>& other_traj, const YAML::Node& cfg) :
+                 ego_vehicle(ego), other_vehicles(others), other_predict_traj(other_traj) {
         computation_budget = cfg["computation_budget"].as<uint64_t>();
         dt = cfg["delta_t"].as<double>();
     }
@@ -66,9 +66,10 @@ public:
     }
     ~KLevelPlanner() {}
 
-    std::pair<Action, StateList> planning(const VehicleBase& ego, const VehicleBase& other);
-    std::pair<std::vector<Action>, StateList> forward_simulate(const VehicleBase& ego, const VehicleBase& other, const StateList& traj);
-    StateList get_prediction(const VehicleBase& ego, const VehicleBase& other);
+    std::pair<Action, StateList> planning(const VehicleBase& ego, const std::vector<VehicleBase>& others);
+    std::pair<std::vector<Action>, StateList> forward_simulate(
+        const VehicleBase& ego, const std::vector<VehicleBase>& others, const std::vector<StateList>& traj);
+    std::vector<StateList> get_prediction(const VehicleBase& ego, const std::vector<VehicleBase>& others);
 };
 
 

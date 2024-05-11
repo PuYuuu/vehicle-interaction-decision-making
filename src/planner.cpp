@@ -4,6 +4,8 @@
 
 #include "planner.hpp"
 
+constexpr double TWO_PI = M_PI * 2;
+
 double MonteCarloTreeSearch::EXPLORATE_RATE = 1 / (2 * sqrt(2.0));
 double MonteCarloTreeSearch::LAMDA = 0.9;
 double MonteCarloTreeSearch::WEIGHT_AVOID = 10;
@@ -44,9 +46,11 @@ double MonteCarloTreeSearch::calc_cur_value(std::shared_ptr<Node> node, double l
         direction = -1;
     }
     
+    double delta_yaw = std::fmod(abs(yaw - node->goal_pose.yaw), TWO_PI);
+    delta_yaw = std::min(delta_yaw, TWO_PI - delta_yaw);
     double distance = -(abs(x - node->goal_pose.x) + abs(y - node->goal_pose.y) +
-                        1.5 * abs(yaw - node->goal_pose.yaw));
-    
+                        1.5 * delta_yaw);
+
     double cur_reward = MonteCarloTreeSearch::WEIGHT_AVOID * avoid +
                         MonteCarloTreeSearch::WEIGHT_SAFE * safe +
                         MonteCarloTreeSearch::WEIGHT_OFFROAD * offroad +
@@ -136,9 +140,7 @@ std::shared_ptr<Node> MonteCarloTreeSearch::expand(std::shared_ptr<Node> node) {
     while (!node->is_terminal() && tried_actions.count(next_action)) {
         next_action = Random::choice(ACTION_LIST);
     }
-    StateList other_states;
-    State cur_other_state = other_predict_traj[node->cur_level + 1];
-    other_states.push_back(cur_other_state);
+    StateList other_states = other_predict_traj[node->cur_level + 1];
     node->add_child(next_action, dt, other_states, node);
 
     return node->children.back();
@@ -168,9 +170,7 @@ std::shared_ptr<Node> MonteCarloTreeSearch::get_best_child(std::shared_ptr<Node>
 
 double MonteCarloTreeSearch::default_policy(std::shared_ptr<Node> node) {
     while (!node->is_terminal()) {
-        State cur_other_state = other_predict_traj[node->cur_level + 1];
-        StateList other_states;
-        other_states.push_back(cur_other_state);
+        StateList other_states= other_predict_traj[node->cur_level + 1];
         std::shared_ptr<Node> next_node = node->next_node(dt, other_states);
         node = next_node;
     }
@@ -187,16 +187,16 @@ void MonteCarloTreeSearch::update(std::shared_ptr<Node> node, double r) {
 }
 
 std::pair<Action, StateList> KLevelPlanner::planning(
-            const VehicleBase& ego, const VehicleBase& other) {
-    StateList other_prediction = get_prediction(ego, other);
-    std::pair<std::vector<Action>, StateList> ret = forward_simulate(ego, other, other_prediction);
+            const VehicleBase& ego, const std::vector<VehicleBase>& others) {
+    std::vector<StateList> other_prediction = get_prediction(ego, others);
+    std::pair<std::vector<Action>, StateList> ret = forward_simulate(ego, others, other_prediction);
 
     return std::make_pair(ret.first[0], ret.second);
 }
 
 std::pair<std::vector<Action>, StateList> KLevelPlanner::forward_simulate(
-    const VehicleBase& ego, const VehicleBase& other, const StateList& traj) {
-    MonteCarloTreeSearch mcts(ego, other, traj, config);
+    const VehicleBase& ego, const std::vector<VehicleBase>& others, const std::vector<StateList>& traj) {
+    MonteCarloTreeSearch mcts(ego, others, traj, config);
     std::shared_ptr<Node> current_node =
         std::make_shared<Node>(ego.state, 0, nullptr, Action::MAINTAIN, StateList(), ego.target);
     current_node = mcts.excute(current_node);
@@ -222,31 +222,54 @@ std::pair<std::vector<Action>, StateList> KLevelPlanner::forward_simulate(
     return std::make_pair(actions, expected_traj);
 }
 
-StateList KLevelPlanner::get_prediction(const VehicleBase& ego, const VehicleBase& other) {
-    StateList pred_traj;
+std::vector<StateList> KLevelPlanner::get_prediction(
+    const VehicleBase& ego, const std::vector<VehicleBase>& others) {
+    std::vector<StateList> pred_trajectory;
+    std::vector<StateList> pred_trajectory_trans;
 
-    if (ego.level == 0 || other.is_get_target()) {
+    if (ego.level == 0) {
         for (size_t i = 0; i < steps + 1; ++i) {
-            pred_traj.push_back(other.state);
+            StateList pred_traj;
+            for (const VehicleBase& other : others) {
+                pred_traj.push_back(other.state);
+            }
+            pred_trajectory.emplace_back(pred_traj);
         }
-    } else if (ego.level == 1) {
-        StateList other_prediction_ego;
-        for (size_t i = 0; i < steps + 1; ++i) {
-            other_prediction_ego.push_back(ego.state);
+        return pred_trajectory;
+    } else if (ego.level > 0) {
+        for (size_t idx = 0; idx < others.size(); ++idx) {
+            if (others[idx].is_get_target()) {
+                StateList pred_traj;
+                for (size_t i = 0; i < steps + 1; ++i) {
+                    pred_traj.push_back(others[idx].state);
+                }
+                pred_trajectory_trans.emplace_back(pred_traj);
+                continue;
+            }
+            VehicleBase exchanged_ego = others[idx];
+            exchanged_ego.level = ego.level - 1;
+            std::vector<VehicleBase> exchanged_others = {ego};
+            for (size_t i = 0; i < others.size(); ++i) {
+                if (i != idx) {
+                    exchanged_others.push_back(others[i]);
+                }
+            }
+            std::vector<StateList> exchage_pred_others = get_prediction(exchanged_ego, exchanged_others);
+            auto pred_idx_vechicle = forward_simulate(exchanged_ego, exchanged_others, exchage_pred_others);
+            pred_trajectory_trans.emplace_back(pred_idx_vechicle.second);
         }
-        auto simulate_ret = forward_simulate(other, ego, other_prediction_ego);
-        pred_traj = simulate_ret.second;
-    } else if (ego.level == 2) {
-        StateList static_traj;
-        for (size_t i = 0; i < steps + 1; ++i) {
-            static_traj.push_back(other.state);
-        }
-        auto ego_l0_ret = forward_simulate(ego, other, static_traj);
-        auto other_l1_ret = forward_simulate(other, ego, ego_l0_ret.second);
-        pred_traj = other_l1_ret.second;
     } else {
         spdlog::error("get_prediction() excute error, the level must be >= 0 and > 3 !");
+        return pred_trajectory;
     }
 
-    return pred_traj;
+    for (int idx = 0; idx < steps + 1; ++idx) {
+        StateList state;
+        for (const StateList& states : pred_trajectory_trans) {
+            state.push_back(states[idx]);
+        }
+        pred_trajectory.emplace_back(state);
+    }
+
+    return pred_trajectory;
 }
