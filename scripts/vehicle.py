@@ -1,3 +1,4 @@
+import random
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,19 +10,47 @@ from planner import KLevelPlanner
 
 
 class Vehicle(VehicleBase):
-    def __init__(self, name, state, color = 'k', cfg: dict = {}) -> None:
-        super().__init__(name, state, color)
+    def __init__(self, name, cfg: dict = {}) -> None:
+        super().__init__(name)
         self.vehicle_box2d: np.ndarray = VehicleBase.get_box2d(self.state)
         self.safezone: np.ndarray = VehicleBase.get_safezone(self.state)
-        self.level: int = 0
         self.target: utils.State = utils.State(0, 0, 0, 0)
         self.have_got_target: bool = False
         self.dt: float = cfg['delta_t']
         self.cur_action: Optional[utils.Action] = None
         self.excepted_traj: Optional[utils.StateList] = None
-        self.footprint: List[utils.State] = [state]
+        self.footprint: List[utils.State] = []
+
+        vehicle_info = cfg["vehicle_list"][name]
+        self.level: int = vehicle_info["level"]
+        self.color: str = vehicle_info["color"]
+        self.init_x_min: float = vehicle_info["init"]["x"]["min"]
+        self.init_x_max: float = vehicle_info["init"]["x"]["max"]
+        self.init_y_min: float = vehicle_info["init"]["y"]["min"]
+        self.init_y_max: float = vehicle_info["init"]["y"]["max"]
+        self.init_v_min: float = vehicle_info["init"]["v"]["min"]
+        self.init_v_max: float = vehicle_info["init"]["v"]["max"]
+        self.init_yaw: float = vehicle_info["init"]["yaw"]
+        self.target.x = vehicle_info["target"]["x"]
+        self.target.y = vehicle_info["target"]["y"]
+        self.target.yaw = vehicle_info["target"]["yaw"]
+        self.vis_text_pos = utils.State(vehicle_info["text"]["x"],
+                                        vehicle_info["text"]["y"])
 
         self.planner = KLevelPlanner(cfg)
+
+        self.reset()
+
+    def reset(self):
+        self.state.x = random.uniform(self.init_x_min, self.init_x_max)
+        self.state.y = random.uniform(self.init_y_min, self.init_y_max)
+        self.state.v = random.uniform(self.init_v_min, self.init_v_max)
+        self.state.yaw = self.init_yaw
+
+        self.cur_action = None
+        self.excepted_traj = None
+        self.have_got_target = False
+        self.footprint = [self.state]
 
     def set_level(self, level) -> None:
         if level >= 0 and level < 3:
@@ -35,14 +64,14 @@ class Vehicle(VehicleBase):
         else:
             logging.CRITICAL("set_target error, the target range must >= -25 and <= 25 !")
 
-    def excute(self, other: VehicleBase) -> Tuple[utils.Action, utils.StateList]:
+    def excute(self, others: List[VehicleBase]) -> Tuple[utils.Action, utils.StateList]:
         if self.is_get_target:
             self.have_got_target = True
             self.state.v = 0
             excepted_traj = utils.StateList()
             act = utils.Action.MAINTAIN
         else:
-            act, excepted_traj = self.planner.planning(self, other)
+            act, excepted_traj = self.planner.planning(self, others)
 
         return act, excepted_traj
 
@@ -73,6 +102,10 @@ class Vehicle(VehicleBase):
 class VehicleList:
     def __init__(self, vehicle_list = None) -> None:
         self.vehicle_list: List[Vehicle] = vehicle_list if vehicle_list is not None else []
+
+    def reset(self):
+        for vehicle in self.vehicle_list:
+            vehicle.reset()
 
     @property
     def is_all_get_target(self) -> bool:

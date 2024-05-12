@@ -1,18 +1,15 @@
 import os
-import math
 import time
 import yaml
-import random
 import logging
 import argparse
 from datetime import datetime
 from typing import List
 from concurrent.futures import ProcessPoolExecutor, Future
 
-import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import Node, State, kinematic_propagate
+from utils import Node, kinematic_propagate
 from env import EnvCrossroads
 from vehicle_base import VehicleBase
 from vehicle import Vehicle, VehicleList
@@ -29,7 +26,9 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
         logging.info(f"Config parameters:\n{config}")
 
     logging.info(f"rounds_num: {rounds_num}")
-    env = EnvCrossroads(size = 25, lanewidth = 4.2)
+    map_size = config["map_size"]
+    lane_width = config["lane_width"]
+    env = EnvCrossroads(map_size, lane_width)
     delta_t = config['delta_t']
     max_simulation_time = config['max_simulation_time']
 
@@ -37,28 +36,16 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
     VehicleBase.initialize(env, 5, 2, 8, 2.4)
     MonteCarloTreeSearch.initialize(config)
     Node.initialize(config['max_step'], MonteCarloTreeSearch.calc_cur_value)
+    
+    vehicles = VehicleList()
+    for vehicle_name in config["vehicle_list"]:
+        vehicle = Vehicle(vehicle_name, config)
+        vehicles.append(vehicle)
 
     succeed_count = 0
     executor = ProcessPoolExecutor(max_workers = 6)
     for iter in range(rounds_num):
-        init_y_0 = random.uniform(-20, -12)
-        init_y_1 = random.uniform(12, 20)
-        init_v_0 = random.uniform(3, 5)
-        init_v_1 = random.uniform(3, 5)
-
-        # the turn left vehicle
-        vehicle_0 = \
-            Vehicle("vehicle_0", State(env.lanewidth / 2, init_y_0, np.pi / 2, init_v_0), 'b', config)
-        # the straight vehicle
-        vehicle_1 = \
-            Vehicle("vehicle_1", State(-env.lanewidth / 2, init_y_1, -np.pi / 2, init_v_1), 'r', config)
-
-        vehicle_0.set_level(1)
-        vehicle_1.set_level(0)
-        vehicle_0.set_target(State(-18, env.lanewidth / 2, math.pi))
-        vehicle_1.set_target(State(-env.lanewidth / 2, -18, 1.5 * math.pi))
-
-        vehicles = VehicleList([vehicle_0, vehicle_1])
+        vehicles.reset()
 
         logging.info(f"\n================== Round {iter} ==================")
         for vehicle in vehicles:
@@ -87,14 +74,14 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
             start_time = time.time()
 
             for vehicle in vehicles:
-                future = executor.submit(vehicle.excute, vehicles.exclude(vehicle)[0])
+                future = executor.submit(vehicle.excute, vehicles.exclude(vehicle))
                 future_list.append(future)
 
             for vehicle, future in zip(vehicles, future_list):
                 vehicle.cur_action, vehicle.excepted_traj = future.result()
                 if not vehicle.is_get_target:
                     vehicle.state = \
-                        kinematic_propagate(vehicle.state, vehicle.cur_action.value, config['delta_t'])
+                        kinematic_propagate(vehicle.state, vehicle.cur_action.value, delta_t)
                     vehicle.footprint.append(vehicle.state)
 
             elapsed_time = time.time() - start_time
@@ -107,15 +94,14 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
                     excepted_traj = vehicle.excepted_traj.to_list()
                     vehicle.draw_vehicle()
                     plt.plot(vehicle.target.x, vehicle.target.y, marker='x', color=vehicle.color)
-                    plt.plot(excepted_traj[0][1:], excepted_traj[1][1:], color=vehicle.color, linewidth=1)
-                plt.text(10, -15, f"v = {vehicles[0].state.v:.2f} m/s", color='blue')
-                plt.text(10,  15, f"v = {vehicles[1].state.v:.2f} m/s", color='red')
-                action_text = "GOAL !" if vehicles[0].is_get_target else vehicles[0].cur_action.name
-                plt.text(10, -18, action_text, fontsize=10, color='blue')
-                action_text = "GOAL !" if vehicles[1].is_get_target else vehicles[1].cur_action.name
-                plt.text(10, 12, action_text, fontsize=10, color='red')
-                plt.xlim(-25, 25)
-                plt.ylim(-25, 25)
+                    plt.plot(excepted_traj[0], excepted_traj[1], color=vehicle.color, linewidth=1)
+                    plt.text(vehicle.vis_text_pos.x, vehicle.vis_text_pos.y + 3, f"level {vehicle.level}", color=vehicle.color)
+                    plt.text(vehicle.vis_text_pos.x, vehicle.vis_text_pos.y,
+                             f"v = {vehicle.state.v:.2f} m/s", color=vehicle.color)
+                    action_text = "GOAL !" if vehicle.is_get_target else vehicle.cur_action.name
+                    plt.text(vehicle.vis_text_pos.x, vehicle.vis_text_pos.y - 3, action_text, color=vehicle.color)
+                plt.xlim(-map_size, map_size)
+                plt.ylim(-map_size, map_size)
                 plt.title(f"Round {iter + 1} / {rounds_num}")
                 plt.gca().set_aspect('equal')
                 plt.pause(0.01)
@@ -124,14 +110,14 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
         plt.cla()
         env.draw_env()
         for vehicle in vehicles:
-            tmp = Vehicle("tmp", State(), vehicle.color, config)
             for state in vehicle.footprint:
-                tmp.state = state
-                tmp.draw_vehicle(True)
-        plt.xlim(-25, 25)
-        plt.ylim(-25, 25)
+                vehicle.state = state
+                vehicle.draw_vehicle(True)
+        plt.xlim(-map_size, map_size)
+        plt.ylim(-map_size, map_size)
         plt.title(f"Round {iter + 1} / {rounds_num}")
         plt.gca().set_aspect('equal')
+        plt.pause(1)
         if save_fig:
             plt.savefig(os.path.join(save_path, f"round_{iter}.svg"), format='svg', dpi=600)
 

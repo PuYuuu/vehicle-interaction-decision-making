@@ -18,10 +18,10 @@ class MonteCarloTreeSearch:
     WEIGHT_DIRECTION = 1
     WEIGHT_DISTANCE = 0.1
 
-    def __init__(self, ego: VehicleBase, other: VehicleBase,
-                 other_traj: StateList, cfg: dict = {}):
+    def __init__(self, ego: VehicleBase, others: List[VehicleBase],
+                 other_traj: List[StateList], cfg: dict = {}):
         self.ego_vehicle: VehicleBase = ego
-        self.other_vehicle: VehicleBase = other
+        self.other_vehicle: VehicleBase = others
         self.other_predict_traj: StateList = other_traj
 
         self.computation_budget = cfg['computation_budget']
@@ -56,7 +56,7 @@ class MonteCarloTreeSearch:
     def default_policy(self, node: Node) -> float:
         while node.is_terminal == False:
             cur_other_state = self.other_predict_traj[node.cur_level + 1]
-            next_node = node.next_node(self.dt, [cur_other_state])
+            next_node = node.next_node(self.dt, cur_other_state)
             node = next_node
 
         return node.value
@@ -73,7 +73,7 @@ class MonteCarloTreeSearch:
         while node.is_terminal == False and next_action in tried_actions:
             next_action = random.choice(utils.ActionList)
         cur_other_state = self.other_predict_traj[node.cur_level + 1]
-        node.add_child(next_action, self.dt, [cur_other_state])
+        node.add_child(next_action, self.dt, cur_other_state)
 
         return node.children[-1]
 
@@ -120,16 +120,18 @@ class MonteCarloTreeSearch:
         if MonteCarloTreeSearch.is_opposite_direction(node.state, ego_box2d):
             direction = -1
 
-        distance = -(abs(x - node.goal_pos.x) + abs(y - node.goal_pos.y) + \
-                     1.5 * abs(yaw - node.goal_pos.yaw))
+        delta_yaw = abs(yaw - node.goal_pos.yaw) % (np.pi * 2)
+        delta_yaw = min(delta_yaw, np.pi * 2 - delta_yaw)
+        distance = -(abs(x - node.goal_pos.x) + abs(y - node.goal_pos.y) + 1.5 * delta_yaw)
 
         cur_reward = MonteCarloTreeSearch.WEIGHT_AVOID * avoid + \
                      MonteCarloTreeSearch.WEIGHT_SAFE * safe + \
                      MonteCarloTreeSearch.WEIGHT_OFFROAD * offroad + \
                      MonteCarloTreeSearch.WEIGHT_DISTANCE * distance + \
-                     MonteCarloTreeSearch.WEIGHT_DIRECTION * direction
+                     MonteCarloTreeSearch.WEIGHT_DIRECTION * direction + \
+                     0.05 * node.state.v
 
-        total_reward = last_node_value + MonteCarloTreeSearch.LAMDA ** (step - 1) * cur_reward
+        total_reward = last_node_value + (MonteCarloTreeSearch.LAMDA ** (step - 1)) * cur_reward
         node.value = total_reward
 
         return total_reward
@@ -181,14 +183,15 @@ class KLevelPlanner:
         self.dt = cfg['delta_t']
         self.config = cfg
 
-    def planning(self, ego: VehicleBase, other: VehicleBase) -> Tuple[utils.Action, StateList]:
-        other_prediction = self.get_prediction(ego, other)
-        actions, traj = self.forward_simulate(ego, other, other_prediction)
+    def planning(self, ego: VehicleBase, others: List[VehicleBase]) -> Tuple[utils.Action, StateList]:
+        other_prediction = self.get_prediction(ego, others)
+        actions, traj = self.forward_simulate(ego, others, other_prediction)
 
         return actions[0], traj
 
-    def forward_simulate(self, ego: VehicleBase, other: VehicleBase, traj: StateList) -> Tuple[List[utils.Action], StateList]:
-        mcts = MonteCarloTreeSearch(ego, other, traj, self.config)
+    def forward_simulate(self, ego: VehicleBase, others: List[VehicleBase],
+                         traj: List[StateList]) -> Tuple[List[utils.Action], StateList]:
+        mcts = MonteCarloTreeSearch(ego, others, traj, self.config)
         current_node = Node(state = ego.state, goal = ego.target)
         current_node = mcts.excute(current_node)
         for _ in range(Node.MAX_LEVEL - 1):
@@ -208,15 +211,42 @@ class KLevelPlanner:
 
         return actions, expected_traj
 
-    def get_prediction(self, ego: VehicleBase, other: VehicleBase) -> StateList:
-        if ego.level == 0 or other.is_get_target:
-            return StateList([other.state] * (self.steps + 1))
-        elif ego.level == 1:
-            other_prediction_ego = StateList([ego.state] * (self.steps + 1))
-            other_act, other_traj = self.forward_simulate(other, ego, other_prediction_ego)
-            return other_traj
-        elif ego.level == 2:
-            static_traj = StateList([other.state] * (self.steps + 1))
-            _, ego_l0_traj = self.forward_simulate(ego, other, static_traj)
-            _, other_l1_traj = self.forward_simulate(other, ego, ego_l0_traj)
-            return other_l1_traj
+    def get_prediction(self, ego: VehicleBase, others: List[VehicleBase]) -> List[StateList]:
+        pred_trajectory = []
+        pred_trajectory_trans = []
+
+        if ego.level == 0:
+            for i in range(self.steps + 1):
+                pred_traj: StateList = StateList()
+                for other in others:
+                    pred_traj.append(other.state)
+                pred_trajectory.append(pred_traj)
+            return pred_trajectory
+        elif ego.level > 0:
+            for idx in range(len(others)):
+                if others[idx].is_get_target:
+                    pred_traj: StateList = StateList()
+                    for i in range(self.steps + 1):
+                        pred_traj.append(others[idx].state)
+                    pred_trajectory_trans.append(pred_traj)
+                    continue
+                exchanged_ego: VehicleBase = others[idx]
+                exchanged_ego.level = ego.level - 1
+                exchanged_others: List[VehicleBase] = [ego]
+                for i in range(len(others)):
+                    if i != idx:
+                        exchanged_others.append(others[i])
+                exchage_pred_others = self.get_prediction(exchanged_ego, exchanged_others)
+                _, pred_idx_vechicle = self.forward_simulate(exchanged_ego, exchanged_others, exchage_pred_others)
+                pred_trajectory_trans.append(pred_idx_vechicle)
+        else:
+            logging.error("get_prediction() excute error, the level must be >= 0 and > 3 !")
+            return pred_trajectory
+
+        for i in range(self.steps + 1):
+            state = StateList()
+            for states in pred_trajectory_trans:
+                state.append(states[i])
+            pred_trajectory.append(state)
+
+        return pred_trajectory

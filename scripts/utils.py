@@ -81,7 +81,7 @@ class Node:
     calc_value_callback = None
 
     def __init__(self, state = State(), level = 0, p: Optional["Node"] = None,
-                 action: Optional[Action] = None, others: List[State] = [],
+                 action: Optional[Action] = None, others: StateList = StateList(),
                  goal: State = State()) -> None:
         self.state: State = state
 
@@ -95,7 +95,7 @@ class Node:
 
         self.children: List[Node] = []
         self.actions: List[Action] = []
-        self.other_agent_state: List[State] = others
+        self.other_agent_state: StateList = others
 
     @property
     def is_terminal(self) -> bool:
@@ -119,7 +119,7 @@ class Node:
 
         return node
 
-    def next_node(self, delta_t: float, others: List[State] = []) -> "Node":
+    def next_node(self, delta_t: float, others: StateList = StateList()) -> "Node":
         next_action = random.choice(ActionList)
         new_state = kinematic_propagate(self.state, next_action.value, delta_t)
         node = Node(new_state, self.cur_level + 1, None, next_action, others, self.goal_pos)
@@ -175,9 +175,9 @@ def kinematic_propagate(state: State, act: List[float], dt: float) -> State:
     next_state.v = state.v + acc * dt
     next_state.yaw = state.yaw + omega * dt
 
-    if next_state.yaw > 2 * np.pi:
+    while next_state.yaw > 2 * np.pi:
         next_state.yaw -= 2 * np.pi
-    if next_state.yaw < 0:
+    while next_state.yaw < 0:
         next_state.yaw += 2 * np.pi
 
     if next_state.v > 20:

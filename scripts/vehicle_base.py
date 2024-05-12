@@ -13,10 +13,9 @@ class VehicleBase(ABC):
     safe_width = 2.4
     env: Optional[EnvCrossroads] = None
 
-    def __init__(self, name: str, state: State, color: str = 'k'):
+    def __init__(self, name: str):
         self.name: str = name
-        self.state: State = state
-        self.color: str = color
+        self.state: State = State()
 
     @staticmethod
     def get_box2d(tar_offset: State) -> np.ndarray:
