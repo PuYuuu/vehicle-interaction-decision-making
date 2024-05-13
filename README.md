@@ -44,7 +44,7 @@ python scripts/run.py
 Or specify parameters for example:
 
 ```shell
-python scripts/run.py -r 5 --log_level debug --config triple.yaml --save_fig
+python scripts/run.py -r 5 --log_level debug --config triple_interact.yaml --save_fig
 ```
 
 For detailed usage help, use `python scripts/run.py -h` to view.

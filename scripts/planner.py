@@ -17,6 +17,7 @@ class MonteCarloTreeSearch:
     WEIGHT_OFFROAD = 2
     WEIGHT_DIRECTION = 1
     WEIGHT_DISTANCE = 0.1
+    WEIGHT_VELOCITY = 0.05
 
     def __init__(self, ego: VehicleBase, others: List[VehicleBase],
                  other_traj: List[StateList], cfg: dict = {}):
@@ -129,7 +130,7 @@ class MonteCarloTreeSearch:
                      MonteCarloTreeSearch.WEIGHT_OFFROAD * offroad + \
                      MonteCarloTreeSearch.WEIGHT_DISTANCE * distance + \
                      MonteCarloTreeSearch.WEIGHT_DIRECTION * direction + \
-                     0.05 * node.state.v
+                     MonteCarloTreeSearch.WEIGHT_VELOCITY * node.state.v
 
         total_reward = last_node_value + (MonteCarloTreeSearch.LAMDA ** (step - 1)) * cur_reward
         node.value = total_reward
@@ -175,6 +176,7 @@ class MonteCarloTreeSearch:
         MonteCarloTreeSearch.WEIGHT_OFFROAD = cfg['weight_offroad']
         MonteCarloTreeSearch.WEIGHT_DIRECTION = cfg['weight_direction']
         MonteCarloTreeSearch.WEIGHT_DISTANCE = cfg['weight_distance']
+        MonteCarloTreeSearch.WEIGHT_VELOCITY = cfg['weight_velocity']
 
 
 class KLevelPlanner:

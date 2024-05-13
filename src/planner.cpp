@@ -13,11 +13,13 @@ double MonteCarloTreeSearch::WEIGHT_SAFE = 0.2;
 double MonteCarloTreeSearch::WEIGHT_OFFROAD = 2;
 double MonteCarloTreeSearch::WEIGHT_DIRECTION = 1;
 double MonteCarloTreeSearch::WEIGHT_DISTANCE = 0.1;
+double MonteCarloTreeSearch::WEIGHT_VELOCITY = 0.05;
 
 double MonteCarloTreeSearch::calc_cur_value(std::shared_ptr<Node> node, double last_node_value) {
     double x = node->state.x;
     double y = node->state.y;
     double yaw = node->state.yaw;
+    double velocity = node->state.v;
     int step = node->cur_level;
     Eigen::Matrix<double, 2, 5> ego_box2d = VehicleBase::get_box2d(node->state);
     Eigen::Matrix<double, 2, 5> ego_safezone = VehicleBase::get_safezone(node->state);
@@ -55,7 +57,8 @@ double MonteCarloTreeSearch::calc_cur_value(std::shared_ptr<Node> node, double l
                         MonteCarloTreeSearch::WEIGHT_SAFE * safe +
                         MonteCarloTreeSearch::WEIGHT_OFFROAD * offroad +
                         MonteCarloTreeSearch::WEIGHT_DISTANCE * distance +
-                        MonteCarloTreeSearch::WEIGHT_DIRECTION * direction;
+                        MonteCarloTreeSearch::WEIGHT_DIRECTION * direction +
+                        MonteCarloTreeSearch::WEIGHT_VELOCITY * velocity;
     double total_reward = last_node_value + pow(MonteCarloTreeSearch::LAMDA, (step - 1)) * cur_reward;
     node->value = total_reward;
 

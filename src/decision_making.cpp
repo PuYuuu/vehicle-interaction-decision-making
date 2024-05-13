@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
 
     int rounds_num = 5;
     std::filesystem::path output_path = project_path / "logs";
-    std::filesystem::path config_path = "default.yaml";
+    std::filesystem::path config_path = "unprotected_left_turn.yaml";
     bool show_animation = true;
     bool save_flag = false;
     std::string log_level = "info";     // info

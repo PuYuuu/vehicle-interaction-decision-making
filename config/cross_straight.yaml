@@ -9,36 +9,16 @@ lane_width: 4
 # mcts parameters
 computation_budget: 15000
 lamda: 0.9
-weight_avoid: 10
+weight_avoid: 20
 weight_safe: 0.2
 weight_offroad: 2
 weight_direction: 1
 weight_distance: 0.1
+weight_velocity: 0.05
 
 vehicle_list:
-  vehilce_0:
-    level: 1
-    color: "blue"
-    init:
-      x:
-        min: 2
-        max: 2
-      y:
-        min: -20
-        max: -12
-      yaw: 1.5707963
-      v:
-        min: 3
-        max: 5
-    target:
-      x: -18
-      y: 2
-      yaw: 3.1415926
-    text:
-      x: 10
-      y: -15
   vehilce_1:
-    level: 0
+    level: 1
     color: "red"
     init:
       x:

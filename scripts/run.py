@@ -134,7 +134,7 @@ if __name__ == "__main__":
                         help=f"debug:logging.DEBUG\tinfo:logging.INFO\t"
                              f"warning:logging.WARNING\terror:logging.ERROR\t"
                              f"critical:logging.CRITICAL\t")
-    parser.add_argument('--config', '-c', type=str, default='default.yaml', help='')
+    parser.add_argument('--config', '-c', type=str, default='unprotected_left_turn.yaml', help='')
     parser.add_argument('--no_animation', action='store_true', default=False, help='')
     parser.add_argument('--save_fig', action='store_true', default=False, help='')
     args = parser.parse_args()

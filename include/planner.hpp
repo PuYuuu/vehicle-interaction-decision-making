@@ -18,6 +18,7 @@ public:
     static double WEIGHT_OFFROAD;
     static double WEIGHT_DIRECTION;
     static double WEIGHT_DISTANCE;
+    static double WEIGHT_VELOCITY;
 
     VehicleBase ego_vehicle;
     std::vector<VehicleBase> other_vehicles;
@@ -40,6 +41,7 @@ public:
         MonteCarloTreeSearch::WEIGHT_OFFROAD = cfg["weight_offroad"].as<double>();
         MonteCarloTreeSearch::WEIGHT_DIRECTION = cfg["weight_direction"].as<double>();
         MonteCarloTreeSearch::WEIGHT_DISTANCE = cfg["weight_distance"].as<double>();
+        MonteCarloTreeSearch::WEIGHT_VELOCITY = cfg["weight_velocity"].as<double>();
     }
     static bool is_opposite_direction(State pos, Eigen::MatrixXd ego_box2d);
     static double calc_cur_value(std::shared_ptr<Node> node, double last_node_value);
