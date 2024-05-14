@@ -5,8 +5,7 @@
 #include <vector>
 #include <Eigen/Core>
 
-class EnvCrossroads
-{
+class EnvCrossroads {
 private:
 
 public:

@@ -82,8 +82,7 @@ public:
     }
 };
 
-class StateList
-{
+class StateList {
 private:
     std::vector<State> states;
     std::vector<std::vector<double>> state_list;
@@ -190,8 +189,7 @@ public:
     }
 };
 
-class Node
-{
+class Node : public std::enable_shared_from_this<Node> {
 private:
     /* data */
 public:
@@ -222,8 +220,7 @@ public:
 
     bool is_terminal(void);
     bool is_fully_expanded(void);
-    std::shared_ptr<Node> add_child(
-        Action next_action, double delta_t, StateList others, std::shared_ptr<Node> p);
+    std::shared_ptr<Node> add_child(Action next_action, double delta_t, StateList others);
     std::shared_ptr<Node> next_node(double delta_t, StateList others);
 };
 
@@ -232,7 +229,7 @@ namespace utils {
     std::string get_action_name(Action action);
     Eigen::Vector2d get_action_value(Action act);
     bool has_overlap(Eigen::MatrixXd box2d_0, Eigen::MatrixXd box2d_1);
-    State kinematic_propagate(State state, Eigen::Vector2d act, double dt);
+    State kinematic_propagate(const State& state, Eigen::Vector2d act, double dt);
     std::string absolute_path(std::string path);
 
 }

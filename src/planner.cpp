@@ -144,7 +144,7 @@ std::shared_ptr<Node> MonteCarloTreeSearch::expand(std::shared_ptr<Node> node) {
         next_action = Random::choice(ACTION_LIST);
     }
     StateList other_states = other_predict_traj[node->cur_level + 1];
-    node->add_child(next_action, dt, other_states, node);
+    node->add_child(next_action, dt, other_states);
 
     return node->children.back();
 }

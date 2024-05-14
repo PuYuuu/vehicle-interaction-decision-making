@@ -10,9 +10,9 @@
 #include "utils.hpp"
 #include "vehicle_base.hpp"
 #include "planner.hpp"
+#include "tracked_object.hpp"
 
-class Vehicle : public VehicleBase
-{
+class Vehicle : public VehicleBase {
 private:
     double dt;
     KLevelPlanner planner;
@@ -31,6 +31,7 @@ public:
     Eigen::Matrix<double, 2, 5, Eigen::RowMajor> vehicle_box2d;
     Eigen::Matrix<double, 2, 5, Eigen::RowMajor> safezone;
     State vis_text_pos;
+    std::vector<TrackedObject> tracked_objects;
 
     Vehicle(std::string _name, const YAML::Node& cfg);
     ~Vehicle() {}
@@ -46,8 +47,7 @@ public:
     }
 };
 
-class VehicleList
-{
+class VehicleList {
 private:
     std::vector<std::shared_ptr<Vehicle>> vehicle_list;
 public:
@@ -65,6 +65,7 @@ public:
     void push_back(std::shared_ptr<Vehicle> vehicle);
     void pop_back(void);
     void reset(void);
+    void set_track_objects(void);
     std::vector<VehicleBase> exclude(int ego_idx);
     std::vector<VehicleBase> exclude(std::shared_ptr<Vehicle> ego);
     std::shared_ptr<Vehicle> operator[](size_t index) {

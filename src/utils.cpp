@@ -48,11 +48,10 @@ bool Node::is_fully_expanded(void) {
     return children.size() >= ACTION_LIST.size();
 }
 
-std::shared_ptr<Node> Node::add_child(
-    Action next_action, double delta_t, StateList others, std::shared_ptr<Node> p) {
+std::shared_ptr<Node> Node::add_child(Action next_action, double delta_t, StateList others) {
     State new_state = utils::kinematic_propagate(state, utils::get_action_value(next_action), delta_t);
     std::shared_ptr<Node> child = std::make_shared<Node>(
-        new_state, cur_level + 1, p, next_action, others, goal_pose);
+        new_state, cur_level + 1, shared_from_this(), next_action, others, goal_pose);
     child->actions = actions;
     child->actions.push_back(next_action);
     if (Node::calc_value_callback) {
@@ -136,8 +135,7 @@ namespace utils {
         return true;
     }
 
-    State kinematic_propagate(State state, Eigen::Vector2d act, double dt)
-    {
+    State kinematic_propagate(const State& state, Eigen::Vector2d act, double dt) {
         State next_state;
         double acc = act[0];
         double omega = act[1];
@@ -163,8 +161,7 @@ namespace utils {
         return next_state;
     }
 
-    std::string absolute_path(std::string path)
-    {
+    std::string absolute_path(std::string path) {
         std::string abs_path = "";
 
         if (path.empty()) {

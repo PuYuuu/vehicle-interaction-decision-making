@@ -86,6 +86,10 @@ void Vehicle::draw_vehicle(bool fill_mode /* = false */) {
     }
 }
 
+void VehicleList::set_track_objects(void) {
+
+}
+
 void VehicleList::reset(void) {
     for (std::shared_ptr<Vehicle>& vehicle : vehicle_list) {
         vehicle->reset();
