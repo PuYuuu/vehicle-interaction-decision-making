@@ -58,20 +58,26 @@ public:
 class KLevelPlanner {
 private:
     int steps;
-    double dt;
     YAML::Node config;
-public:
-    KLevelPlanner() {}
+
+    KLevelPlanner(const KLevelPlanner &single) = delete;
+    const KLevelPlanner &operator=(const KLevelPlanner &single) = delete;
     KLevelPlanner(const YAML::Node& cfg) : config(cfg) {
         steps = cfg["max_step"].as<int>();
-        dt = cfg["delta_t"].as<double>();
     }
     ~KLevelPlanner() {}
+public:
+    static KLevelPlanner& get_instance(const YAML::Node& cfg) {
+        static KLevelPlanner planner_(cfg);
+        return planner_;
+    }
 
-    std::pair<Action, StateList> planning(const VehicleBase& ego, const std::vector<VehicleBase>& others);
+    std::pair<Action, StateList> planning(
+        const VehicleBase& ego, const std::vector<VehicleBase>& others) const;
     std::pair<std::vector<Action>, StateList> forward_simulate(
-        const VehicleBase& ego, const std::vector<VehicleBase>& others, const std::vector<StateList>& traj);
-    std::vector<StateList> get_prediction(const VehicleBase& ego, const std::vector<VehicleBase>& others);
+        const VehicleBase& ego, const std::vector<VehicleBase>& others, const std::vector<StateList>& traj) const;
+    std::vector<StateList> get_prediction(
+        const VehicleBase& ego, const std::vector<VehicleBase>& others) const;
 };
 
 

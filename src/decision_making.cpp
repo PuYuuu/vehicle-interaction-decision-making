@@ -112,7 +112,7 @@ void run(int rounds_num, std::filesystem::path config_path,
             if (show_animation) {
                 plt::cla();
                 env->draw_env();
-                for (std::shared_ptr<Vehicle> vehicle : vehicles) {
+                for (const std::shared_ptr<Vehicle>& vehicle : vehicles) {
                     auto excepted_traj = vehicle->excepted_traj.to_vector();
                     vehicle->draw_vehicle();
                     plt::plot({vehicle->target.x}, {vehicle->target.y}, {{"marker", "x"}, {"color", vehicle->color}});
@@ -133,24 +133,27 @@ void run(int rounds_num, std::filesystem::path config_path,
             timestamp += delta_t;
         }
 
-        plt::clf();
-        env->draw_env();
-
-        for (std::shared_ptr<Vehicle>& vehicle : vehicles) {
-            for (const State& state : vehicle->footprint) {
-                vehicle->state = state;
-                vehicle->draw_vehicle(true);
+        if (show_animation || save_fig) {
+            plt::clf();
+            env->draw_env();
+            for (std::shared_ptr<Vehicle>& vehicle : vehicles) {
+                for (const State& state : vehicle->footprint) {
+                    vehicle->state = state;
+                    vehicle->draw_vehicle(true);
+                }
+                plt::text(vehicle->vis_text_pos.x, vehicle->vis_text_pos.y + 3,
+                            fmt::format("level {:d}", vehicle->level), {{"color", vehicle->color}});
             }
-            plt::text(vehicle->vis_text_pos.x, vehicle->vis_text_pos.y + 3,
-                        fmt::format("level {:d}", vehicle->level), {{"color", vehicle->color}});
-        }
-        plt::xlim(-map_size, map_size);
-        plt::ylim(-map_size, map_size);
-        plt::title(fmt::format("Round {} / {}", iter + 1, rounds_num));
-        plt::set_aspect_equal();
-        plt::pause(1);
-        if (save_fig) {
-            plt::save((save_path / ( "Round_" + std::to_string(iter) + ".svg")).string(), 600);
+            plt::xlim(-map_size, map_size);
+            plt::ylim(-map_size, map_size);
+            plt::title(fmt::format("Round {} / {}", iter + 1, rounds_num));
+            plt::set_aspect_equal();
+            if (show_animation) {
+                plt::pause(1);
+            }
+            if (save_fig) {
+                plt::save((save_path / ( "Round_" + std::to_string(iter) + ".svg")).string(), 600);
+            }
         }
     }
 

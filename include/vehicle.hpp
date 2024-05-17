@@ -15,7 +15,7 @@
 class Vehicle : public VehicleBase {
 private:
     double dt;
-    KLevelPlanner planner;
+    KLevelPlanner& planner;
     double init_x_min;
     double init_x_max;
     double init_y_min;

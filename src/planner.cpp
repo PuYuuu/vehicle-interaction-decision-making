@@ -190,7 +190,7 @@ void MonteCarloTreeSearch::update(std::shared_ptr<Node> node, double r) {
 }
 
 std::pair<Action, StateList> KLevelPlanner::planning(
-            const VehicleBase& ego, const std::vector<VehicleBase>& others) {
+            const VehicleBase& ego, const std::vector<VehicleBase>& others) const {
     std::vector<StateList> other_prediction = get_prediction(ego, others);
     std::pair<std::vector<Action>, StateList> ret = forward_simulate(ego, others, other_prediction);
 
@@ -198,7 +198,7 @@ std::pair<Action, StateList> KLevelPlanner::planning(
 }
 
 std::pair<std::vector<Action>, StateList> KLevelPlanner::forward_simulate(
-    const VehicleBase& ego, const std::vector<VehicleBase>& others, const std::vector<StateList>& traj) {
+    const VehicleBase& ego, const std::vector<VehicleBase>& others, const std::vector<StateList>& traj) const {
     MonteCarloTreeSearch mcts(ego, others, traj, config);
     std::shared_ptr<Node> current_node =
         std::make_shared<Node>(ego.state, 0, nullptr, Action::MAINTAIN, StateList(), ego.target);
@@ -226,7 +226,7 @@ std::pair<std::vector<Action>, StateList> KLevelPlanner::forward_simulate(
 }
 
 std::vector<StateList> KLevelPlanner::get_prediction(
-    const VehicleBase& ego, const std::vector<VehicleBase>& others) {
+    const VehicleBase& ego, const std::vector<VehicleBase>& others) const {
     std::vector<StateList> pred_trajectory;
     std::vector<StateList> pred_trajectory_trans;
 

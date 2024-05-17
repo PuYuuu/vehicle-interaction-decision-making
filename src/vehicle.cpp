@@ -7,7 +7,8 @@
 namespace plt = matplotlibcpp;
 
 Vehicle::Vehicle(
-    std::string _name, const YAML::Node& cfg) : VehicleBase(_name) {
+    std::string _name, const YAML::Node& cfg) :
+        VehicleBase(_name), planner(KLevelPlanner::get_instance(cfg)) {
     YAML::Node vehicle_info = cfg["vehicle_list"][_name];
     level = vehicle_info["level"].as<int>();
     color = vehicle_info["color"].as<std::string>();
@@ -27,7 +28,6 @@ Vehicle::Vehicle(
     vehicle_box2d = VehicleBase::get_box2d(state);
     safezone = VehicleBase::get_safezone(state);
     dt = cfg["delta_t"].as<double>();
-    planner = KLevelPlanner(cfg);
 
     reset();
 }
