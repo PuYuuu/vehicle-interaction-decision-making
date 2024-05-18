@@ -45,14 +45,14 @@ void Vehicle::reset(void) {
     footprint.push_back(state);
 }
 
-void Vehicle::excute(std::vector<VehicleBase> others) {
+void Vehicle::excute(void) {
     if (is_get_target()) {
         have_got_target = true;
         state.v = 0;
         cur_action = Action::MAINTAIN;
         excepted_traj = StateList();
     } else {
-        std::pair<Action, StateList> act_and_traj = planner.planning(*this, others);
+        std::pair<Action, StateList> act_and_traj = planner.planning(*this);
         cur_action = act_and_traj.first;
         excepted_traj = act_and_traj.second;
         state = utils::kinematic_propagate(state, utils::get_action_value(cur_action), dt);
@@ -86,14 +86,11 @@ void Vehicle::draw_vehicle(bool fill_mode /* = false */) {
     }
 }
 
-void VehicleList::set_track_objects(void) {
-
-}
-
 void VehicleList::reset(void) {
     for (std::shared_ptr<Vehicle>& vehicle : vehicle_list) {
         vehicle->reset();
     }
+    update_track_objects();
 }
 
 bool VehicleList::is_all_get_target(void) {
@@ -118,11 +115,49 @@ bool VehicleList::is_any_collision(void) {
 }
 
 void VehicleList::push_back(std::shared_ptr<Vehicle> vehicle) {
-    vehicle_list.push_back(vehicle);
+    if (vehicle_names.count(vehicle->name) > 0) {
+        spdlog::error(fmt::format("vehicle name [{}] duplication is not acceptable !", vehicle->name));
+        std::exit(EXIT_FAILURE);
+    } else {
+        vehicle_list.push_back(vehicle);
+        vehicle_names.insert(vehicle->name);
+    }
 }
 
 void VehicleList::pop_back(void) {
+    vehicle_names.erase(vehicle_list.back()->name);
     vehicle_list.pop_back();
+}
+
+std::shared_ptr<Vehicle> VehicleList::operator[](std::string name) {
+    for (std::shared_ptr<Vehicle> vehicle : vehicle_list) {
+        if (vehicle->name == name) {
+            return vehicle;
+        }
+    }
+
+    return nullptr;
+}
+
+void VehicleList::set_track_objects(void) {
+    for (size_t i = 0; i < vehicle_list.size(); ++i) {
+        for (size_t j = 0; j < vehicle_list.size(); ++j) {
+            if (j != i) {
+                TrackedObject track_object(vehicle_list[j]->name);
+                track_object.state = vehicle_list[j]->state;
+                track_object.target = vehicle_list[j]->target;
+                vehicle_list[i]->tracked_objects.emplace_back(track_object);
+            }
+        }
+    }
+}
+
+void VehicleList::update_track_objects(void) {
+    for (std::shared_ptr<Vehicle>& vehicle : vehicle_list) {
+        for (TrackedObject& object : vehicle->tracked_objects) {
+            object.state = (*this)[object.name]->state;
+        }
+    }
 }
 
 std::vector<VehicleBase> VehicleList::exclude(int ego_idx) {

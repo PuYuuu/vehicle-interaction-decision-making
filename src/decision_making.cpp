@@ -50,6 +50,11 @@ void run(int rounds_num, std::filesystem::path config_path,
     double max_simulation_time = config["max_simulation_time"].as<double>();
     double map_size = config["map_size"].as<double>();
     double lane_width = config["lane_width"].as<double>();
+    bool is_show_predict_traj = config["is_show_predict_traj"].as<bool>();
+    std::string ego_vehicle_name;
+    if (config["ego_vehicle"]) {
+        ego_vehicle_name = config["ego_vehicle"].as<std::string>();
+    }
 
     std::shared_ptr<EnvCrossroads> env = std::make_shared<EnvCrossroads>(map_size, lane_width);
     VehicleBase::initialize(env, 5, 2, 8, 2.4);
@@ -62,6 +67,11 @@ void run(int rounds_num, std::filesystem::path config_path,
         std::shared_ptr<Vehicle> vehicle = std::make_shared<Vehicle>(vehicle_name, config);
         vehicles.push_back(vehicle);
     }
+    if (vehicles.size() < 1) {
+        spdlog::error("Please set the vehicles parameters in the configuration file !");
+        return ;
+    }
+    vehicles.set_track_objects();
 
     uint64_t succeed_count = 0;
     for (uint64_t iter = 0; iter < rounds_num; ++iter) {
@@ -94,8 +104,8 @@ void run(int rounds_num, std::filesystem::path config_path,
             TicToc iter_cost_time;
             std::vector<std::thread> threads;
             for (std::shared_ptr<Vehicle>& vehicle : vehicles) {
-                std::thread thread([&vehicle, &vehicles]() {
-                    vehicle->excute(vehicles.exclude(vehicle));
+                std::thread thread([&vehicle]() {
+                    vehicle->excute();
                 });
                 threads.emplace_back(std::move(thread));
             }
@@ -106,6 +116,7 @@ void run(int rounds_num, std::filesystem::path config_path,
                 }
             }
 
+            vehicles.update_track_objects();
             spdlog::debug(fmt::format(
                 "simulation time {:.3f} step cost {:.3f} sec", timestamp, iter_cost_time.toc()));  
 
@@ -123,6 +134,21 @@ void run(int rounds_num, std::filesystem::path config_path,
                                 fmt::format("v = {:.2f} m/s", vehicle->state.v), {{"color", vehicle->color}});
                     plt::text(vehicle->vis_text_pos.x, vehicle->vis_text_pos.y - 3,
                                 fmt::format("{}", utils::get_action_name(vehicle->cur_action)), {{"color", vehicle->color}});
+                }
+                if (is_show_predict_traj) {
+                    if (ego_vehicle_name.empty()) {
+                        ego_vehicle_name = vehicles[0]->name;
+                        spdlog::warn("ego_vehicle parameter in yaml is none, defualt: " + ego_vehicle_name);
+                    }
+                    for (const TrackedObject& obj : vehicles[ego_vehicle_name]->tracked_objects) {
+                        for (const PredictTraj& predict_traj : obj.predict_trajs) {
+                            double belief = predict_traj.confidence;
+                            std::vector<std::vector<double>> prediction = predict_traj.traj.to_vector();
+                            plt::plot(prediction[0], prediction[1], {{"color", "gray"}, {"linewidth", "1"}});
+                            plt::text(prediction[0].back(), prediction[1].back(),
+                                        fmt::format("{:.2f}", belief), {{"color", "gray"}});
+                        }
+                    }
                 }
                 plt::xlim(-map_size, map_size);
                 plt::ylim(-map_size, map_size);

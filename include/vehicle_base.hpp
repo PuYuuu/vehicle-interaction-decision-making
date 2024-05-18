@@ -10,6 +10,7 @@
 
 #include "env.hpp"
 #include "utils.hpp"
+#include "tracked_object.hpp"
 
 class VehicleBase {
 private:
@@ -26,13 +27,14 @@ public:
     State target;
     int level;
     bool have_got_target;
+    std::vector<TrackedObject> tracked_objects;
 
     VehicleBase(std::string _name) :
         name(_name), level(0), have_got_target(false) {
         state = State(0, 0, 0, 0);
         target = State(0, 0, 0, 0);
     }
-    ~VehicleBase() {};
+    virtual ~VehicleBase() {};
     void set_target(State tar);
     void set_level(int l);
     bool is_get_target(void) const;

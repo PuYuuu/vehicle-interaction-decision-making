@@ -150,7 +150,7 @@ public:
         }
     }
 
-    std::vector<std::vector<double>> to_vector(bool trans = true) {
+    std::vector<std::vector<double>> to_vector(bool trans = true) const {
         if (trans) {
             return state_list_trans;
         } else {

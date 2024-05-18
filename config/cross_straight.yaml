@@ -14,7 +14,9 @@ weight_safe: 0.2
 weight_offroad: 2
 weight_direction: 1
 weight_distance: 0.1
-weight_velocity: 0.05
+weight_velocity: 0.03
+
+is_show_predict_traj: false
 
 vehicle_list:
   vehilce_1:

@@ -57,7 +57,8 @@ std::shared_ptr<Node> Node::add_child(Action next_action, double delta_t, StateL
     if (Node::calc_value_callback) {
         Node::calc_value_callback(child, value);
     } else {
-        spdlog::error("Node::calc_value_callback is null !");
+        spdlog::error("Node::calc_value_callback is null, which will lead to a program exception !");
+        std::exit(EXIT_FAILURE);
     }
     children.push_back(child);
 

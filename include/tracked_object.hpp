@@ -18,13 +18,20 @@ private:
     /* data */
 public:
     std::string name;
+    State state;
+    State target;
     std::vector<PredictTraj> predict_trajs;
 
+    TrackedObject() : name("") {
+        state = State(0, 0, 0, 0);
+        predict_trajs.clear();
+    }
     TrackedObject(std::string _name) : name(_name) {
+        state = State(0, 0, 0, 0);
         predict_trajs.clear();
     }
     ~TrackedObject() {
-        
+
     }
 };
 
