@@ -44,7 +44,7 @@ python scripts/run.py
 Or specify parameters for example:
 
 ```shell
-python scripts/run.py -r 5 --log_level debug --config triple_interact.yaml --save_fig
+python scripts/run.py -r 5 --log_level debug --config ./config/triple_interact.yaml
 ```
 
 For detailed usage help, use `python scripts/run.py -h` to view.
@@ -76,58 +76,9 @@ sudo make install
 3. Install `matplotlib-cpp` for visualization :
 
 ```shell
-git clone git@github.com:lava/matplotlib-cpp.git
+git clone git@github.com:PuYuuu/matplotlib-cpp.git
+sudo cp -r matplotlib-cpp /usr/local/include
 ```
-
-Then replace the ***get_array()*** and ***text()*** functions in `matplotlibcpp.h` :
-
-```c++
-template<typename Numeric>
-PyObject* get_array(const std::vector<Numeric>& v)
-{
-    npy_intp vsize = v.size();
-    NPY_TYPES type = select_npy_type<Numeric>::type;
-    if (type == NPY_NOTYPE) {
-        size_t memsize = v.size()*sizeof(double);
-        double* dp = static_cast<double*>(::malloc(memsize));
-        for (size_t i=0; i<v.size(); ++i)
-            dp[i] = v[i];
-        PyObject* varray = PyArray_SimpleNewFromData(1, &vsize, NPY_DOUBLE, dp);
-        PyArray_UpdateFlags(reinterpret_cast<PyArrayObject*>(varray), NPY_ARRAY_OWNDATA);
-        return varray;
-    }
-    
-    _import_array();
-    PyObject* varray = PyArray_SimpleNewFromData(1, &vsize, type, (void*)(v.data()));
-    return varray;
-}
-
-template<typename Numeric>
-void text(Numeric x, Numeric y, const std::string& s = "", const std::map<std::string, std::string>& keywords = {})
-{
-    detail::_interpreter::get();
-
-    PyObject* args = PyTuple_New(3);
-    PyTuple_SetItem(args, 0, PyFloat_FromDouble(x));
-    PyTuple_SetItem(args, 1, PyFloat_FromDouble(y));
-    PyTuple_SetItem(args, 2, PyString_FromString(s.c_str()));
-
-    // construct keyword args
-    PyObject* kwargs = PyDict_New();
-    for (auto it = keywords.begin(); it != keywords.end(); ++it) {
-        PyDict_SetItemString(kwargs, it->first.c_str(), PyUnicode_FromString(it->second.c_str()));
-    }
-
-    PyObject* res = PyObject_Call(detail::_interpreter::get().s_python_function_text, args, kwargs);
-    if(!res) throw std::runtime_error("Call to text() failed.");
-
-    Py_DECREF(args);
-    Py_DECREF(kwargs);
-    Py_DECREF(res);
-}
-```
-
-Copy the `matplotlib-cpp` folder to the system directory, such as `/usr/local/include`.
 
 #### 1.2.2 Build it
 

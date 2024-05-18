@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
 
     int rounds_num = 5;
     std::filesystem::path output_path = project_path / "logs";
-    std::filesystem::path config_path = "unprotected_left_turn.yaml";
+    std::filesystem::path config_path = project_path / "config" /"unprotected_left_turn.yaml";
     bool show_animation = true;
     bool save_flag = false;
     std::string log_level = "info";     // info
@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
                 log_level = std::string(optarg);
                 break;
             case 'c':
-                config_path = optarg;
+                config_path = utils::absolute_path(optarg);
                 break;
             case 'n':
                 show_animation = false;
@@ -228,9 +228,6 @@ int main(int argc, char** argv) {
     spdlog::set_level(LOG_LEVEL_DICT[log_level]);
     spdlog::set_pattern("%Y-%m-%d %H:%M:%S.%e - %^%l%$ - %v");
     spdlog::info("log level : " + log_level);
-
-    // config file path
-    config_path = project_path / "config" / config_path;
 
     // output path
     if (save_flag) {

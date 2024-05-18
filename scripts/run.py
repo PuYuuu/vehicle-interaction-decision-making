@@ -134,14 +134,19 @@ if __name__ == "__main__":
                         help=f"debug:logging.DEBUG\tinfo:logging.INFO\t"
                              f"warning:logging.WARNING\terror:logging.ERROR\t"
                              f"critical:logging.CRITICAL\t")
-    parser.add_argument('--config', '-c', type=str, default='unprotected_left_turn.yaml', help='')
+    parser.add_argument('--config', '-c', type=str, default=None, help='')
     parser.add_argument('--no_animation', action='store_true', default=False, help='')
     parser.add_argument('--save_fig', action='store_true', default=False, help='')
     args = parser.parse_args()
 
+    current_file_path = os.path.abspath(__file__)
     if args.output_path is None:
-        current_file_path = os.path.abspath(__file__)
         args.output_path = os.path.dirname(os.path.dirname(current_file_path))
+    if args.config is None:
+        config_file_path = os.path.join(os.path.dirname(os.path.dirname(current_file_path)),
+                                        'config', 'unprotected_left_turn.yaml')
+    else:
+        config_file_path = args.config
 
     log_level = LOG_LEVEL_DICT[args.log_level]
     log_format = '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
@@ -160,6 +165,5 @@ if __name__ == "__main__":
     logging.info(f"log level : {args.log_level}")
 
     project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    config_file_path = os.path.join(project_path, 'config', args.config)
 
     run(args.rounds, config_file_path, result_save_path, args.no_animation, args.save_fig)
