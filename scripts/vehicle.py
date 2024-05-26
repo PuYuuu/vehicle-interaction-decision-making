@@ -1,15 +1,30 @@
+import os
 import random
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.transforms import Affine2D
 from typing import Tuple, List, Union, Optional
 
 import utils
 from vehicle_base import VehicleBase
 from planner import KLevelPlanner
 
+current_dir_path = os.path.dirname(os.path.abspath(__file__))
+vehicle_show_config = [
+    # ["#30A9DE", f"{current_dir_path}/../img/vehicle/blue.png"],
+    ["#0000FF", f"{current_dir_path}/../img/vehicle/blue.png"],
+    ["#E53A40", f"{current_dir_path}/../img/vehicle/red.png"],
+    ["#4CAF50", f"{current_dir_path}/../img/vehicle/green.png"],
+    ["#FFFF00", f"{current_dir_path}/../img/vehicle/yellow.png"],
+    ["#00FFFF", f"{current_dir_path}/../img/vehicle/cyan.png"],
+    ["#FA58F4", f"{current_dir_path}/../img/vehicle/purple.png"],
+    ["#000000", f"{current_dir_path}/../img/vehicle/black.png"],
+]
 
 class Vehicle(VehicleBase):
+    global_vehicle_idx = 0
+
     def __init__(self, name, cfg: dict = {}) -> None:
         super().__init__(name)
         self.vehicle_box2d: np.ndarray = VehicleBase.get_box2d(self.state)
@@ -23,7 +38,6 @@ class Vehicle(VehicleBase):
 
         vehicle_info = cfg["vehicle_list"][name]
         self.level: int = vehicle_info["level"]
-        self.color: str = vehicle_info["color"]
         self.init_x_min: float = vehicle_info["init"]["x"]["min"]
         self.init_x_max: float = vehicle_info["init"]["x"]["max"]
         self.init_y_min: float = vehicle_info["init"]["y"]["min"]
@@ -34,8 +48,12 @@ class Vehicle(VehicleBase):
         self.target.x = vehicle_info["target"]["x"]
         self.target.y = vehicle_info["target"]["y"]
         self.target.yaw = vehicle_info["target"]["yaw"]
-        self.vis_text_pos = utils.State(vehicle_info["text"]["x"],
-                                        vehicle_info["text"]["y"])
+        self.vis_text_pos = utils.State(vehicle_info["text"]["x"], vehicle_info["text"]["y"])
+
+        self.color: str = vehicle_show_config[Vehicle.global_vehicle_idx % len(vehicle_show_config)][0]
+        vehicle_pic_path = vehicle_show_config[Vehicle.global_vehicle_idx % len(vehicle_show_config)][1]
+        self.outlook = plt.imread(vehicle_pic_path, format = "png")
+        Vehicle.global_vehicle_idx += 1
 
         self.planner = KLevelPlanner(cfg)
 
@@ -75,23 +93,36 @@ class Vehicle(VehicleBase):
 
         return act, excepted_traj
 
-    def draw_vehicle(self, fill_mode = False) -> None:
-        head = np.array(
-            [[0.3 * VehicleBase.length, 0.3 * VehicleBase.length],
-             [VehicleBase.width/2, -VehicleBase.width/2]])
-        rot = np.array([[np.cos(self.state.yaw), -np.sin(self.state.yaw)],
-                        [np.sin(self.state.yaw), np.cos(self.state.yaw)]])
-        head = np.dot(rot, head)
-        head += np.array([[self.state.x], [self.state.y]])
+    def draw_vehicle(self, draw_style = 'realistic', fill_mode = False) -> None:
+        if draw_style == 'realistic':
+            transform_data = Affine2D().rotate_deg_around(
+                self.state.x, self.state.y, self.state.yaw / np.pi * 180)
+            transform_data += plt.gca().transData
 
-        self.vehicle_box2d = VehicleBase.get_box2d(self.state)
-
-        if not fill_mode:
-            plt.plot(self.vehicle_box2d[0, :], self.vehicle_box2d[1, :], self.color)
-            plt.plot(head[0, :], head[1, :], self.color)
+            # 0.15 offset consider the length of the rearview mirror
+            image_extent = [self.state.x - self.length / 2,
+                            self.state.x + self.length / 2,
+                            self.state.y - self.width / 2 - 0.15,
+                            self.state.y + self.width / 2 + 0.15]
+            plt.imshow(self.outlook, transform=transform_data,
+                       extent=image_extent, zorder=10.0, clip_on=True)
         else:
-            plt.fill(self.vehicle_box2d[0, :], self.vehicle_box2d[1, :],
-                     color=self.color, alpha=0.5)
+            head = np.array(
+                [[0.3 * VehicleBase.length, 0.3 * VehicleBase.length],
+                [VehicleBase.width/2, -VehicleBase.width/2]])
+            rot = np.array([[np.cos(self.state.yaw), -np.sin(self.state.yaw)],
+                            [np.sin(self.state.yaw), np.cos(self.state.yaw)]])
+            head = np.dot(rot, head)
+            head += np.array([[self.state.x], [self.state.y]])
+
+            self.vehicle_box2d = VehicleBase.get_box2d(self.state)
+
+            if not fill_mode:
+                plt.plot(self.vehicle_box2d[0, :], self.vehicle_box2d[1, :], self.color)
+                plt.plot(head[0, :], head[1, :], self.color)
+            else:
+                plt.fill(self.vehicle_box2d[0, :], self.vehicle_box2d[1, :],
+                        color=self.color, alpha=0.5)
 
     @property
     def is_get_target(self) -> bool:

@@ -51,6 +51,7 @@ void run(int rounds_num, std::filesystem::path config_path,
     double map_size = config["map_size"].as<double>();
     double lane_width = config["lane_width"].as<double>();
     bool is_show_predict_traj = config["is_show_predict_traj"].as<bool>();
+    std::string vehicle_draw_style = config["vehicle_display_style"].as<std::string>();
     std::string ego_vehicle_name;
     if (config["ego_vehicle"]) {
         ego_vehicle_name = config["ego_vehicle"].as<std::string>();
@@ -125,7 +126,7 @@ void run(int rounds_num, std::filesystem::path config_path,
                 env->draw_env();
                 for (const std::shared_ptr<Vehicle>& vehicle : vehicles) {
                     auto excepted_traj = vehicle->excepted_traj.to_vector();
-                    vehicle->draw_vehicle();
+                    vehicle->draw_vehicle(vehicle_draw_style);
                     plt::plot({vehicle->target.x}, {vehicle->target.y}, {{"marker", "x"}, {"color", vehicle->color}});
                     plt::plot(excepted_traj[0], excepted_traj[1], {{"color", vehicle->color}, {"linewidth", "1"}});
                     plt::text(vehicle->vis_text_pos.x, vehicle->vis_text_pos.y + 3,
@@ -165,7 +166,7 @@ void run(int rounds_num, std::filesystem::path config_path,
             for (std::shared_ptr<Vehicle>& vehicle : vehicles) {
                 for (const State& state : vehicle->footprint) {
                     vehicle->state = state;
-                    vehicle->draw_vehicle(true);
+                    vehicle->draw_vehicle(vehicle_draw_style, true);
                 }
                 plt::text(vehicle->vis_text_pos.x, vehicle->vis_text_pos.y + 3,
                             fmt::format("level {:d}", vehicle->level), {{"color", vehicle->color}});

@@ -16,12 +16,14 @@ weight_direction: 1
 weight_distance: 0.1
 weight_velocity: 0.03
 
+# visualization parameters
+# realistic or linestyle
+vehicle_display_style: "realistic"
 is_show_predict_traj: false
 
 vehicle_list:
   vehilce_1:
     level: 1
-    color: "red"
     init:
       x:
         min: -2
@@ -42,7 +44,6 @@ vehicle_list:
       y: 15
   vehilce_2:
     level: 0
-    color: "green"
     init:
       x:
         min: -20

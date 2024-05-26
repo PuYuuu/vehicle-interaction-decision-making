@@ -1,17 +1,35 @@
 #include <vector>
+#include <filesystem>
+
 #include <spdlog/spdlog.h>
 #include <matplotlib-cpp/matplotlibcpp.h>
 #include <fmt/core.h>
+
 #include "vehicle.hpp"
 
 namespace plt = matplotlibcpp;
+
+std::filesystem::path source_file_path(__FILE__);
+std::filesystem::path vehicle_img_path =
+    source_file_path.parent_path().parent_path() / "img" / "vehicle";
+const std::vector<std::pair<std::string, std::string>> vehicle_show_config = {
+    // {"#30A9DE", vehicle_img_path / "blue.png"},
+    {"#0000FF", vehicle_img_path / "blue.png"},
+    {"#E53A40", vehicle_img_path / "red.png"},
+    {"#4CAF50", vehicle_img_path / "green.png"},
+    {"#FFFF00", vehicle_img_path / "yellow.png"},
+    {"#00FFFF", vehicle_img_path / "cyan.png"},
+    {"#FA58F4", vehicle_img_path / "purple.png"},
+    {"#000000", vehicle_img_path / "black.png"},
+};
+
+int Vehicle::global_vehicle_idx = 0;
 
 Vehicle::Vehicle(
     std::string _name, const YAML::Node& cfg) :
         VehicleBase(_name), planner(KLevelPlanner::get_instance(cfg)) {
     YAML::Node vehicle_info = cfg["vehicle_list"][_name];
     level = vehicle_info["level"].as<int>();
-    color = vehicle_info["color"].as<std::string>();
     init_x_min = vehicle_info["init"]["x"]["min"].as<double>();
     init_x_max = vehicle_info["init"]["x"]["max"].as<double>();
     init_y_min = vehicle_info["init"]["y"]["min"].as<double>();
@@ -24,6 +42,13 @@ Vehicle::Vehicle(
     target.yaw = vehicle_info["target"]["yaw"].as<double>();
     vis_text_pos.x = vehicle_info["text"]["x"].as<double>();
     vis_text_pos.y = vehicle_info["text"]["y"].as<double>();
+
+    int local_loop_idx = Vehicle::global_vehicle_idx % vehicle_show_config.size();
+    color = vehicle_show_config[local_loop_idx].first;
+    std::string vehicle_pic_path = vehicle_show_config[local_loop_idx].second;
+    // todo
+    // outlook = plt.imread(vehicle_pic_path, format = "png");
+    ++Vehicle::global_vehicle_idx;
 
     vehicle_box2d = VehicleBase::get_box2d(state);
     safezone = VehicleBase::get_safezone(state);
@@ -60,29 +85,36 @@ void Vehicle::excute(void) {
     }
 }
 
-void Vehicle::draw_vehicle(bool fill_mode /* = false */) {
-    Eigen::Matrix<double, 2, 2, Eigen::RowMajor> head;
-    Eigen::Matrix2d rot;
-    head << 0.3 * VehicleBase::length, 0.3 * VehicleBase::length,
-            VehicleBase::width/2, -VehicleBase::width/2;
-    rot << cos(state.yaw), -sin(state.yaw), sin(state.yaw), cos(state.yaw);
-
-    head = rot * head;
-    head += Eigen::Vector2d(state.x, state.y).replicate(1, 2);
-    vehicle_box2d = VehicleBase::get_box2d(state);
-
-    std::vector<std::vector<double>> box2d_vec(2);
-    std::vector<std::vector<double>> head_vec(2);
-    box2d_vec[0].assign(vehicle_box2d.row(0).data(), vehicle_box2d.row(0).data() + vehicle_box2d.cols());
-    box2d_vec[1].assign(vehicle_box2d.row(1).data(), vehicle_box2d.row(1).data() + vehicle_box2d.cols());
-    head_vec[0].assign(head.row(0).data(), head.row(0).data() + head.cols());
-    head_vec[1].assign(head.row(1).data(), head.row(1).data() + head.cols());
-
-    if (!fill_mode) {
-        plt::plot(box2d_vec[0], box2d_vec[1], color);
-        plt::plot(head_vec[0], head_vec[1], color);
+void Vehicle::draw_vehicle(std::string draw_style/* = "realistic"*/, bool fill_mode /* = false */) {
+    draw_style = "linestyle";
+    if (draw_style == "realistic") {
+        // todo
     } else {
-        plt::fill(box2d_vec[0], box2d_vec[1], {{"color", color}, {"alpha", "0.5"}});
+        Eigen::Matrix<double, 2, 2, Eigen::RowMajor> head;
+        Eigen::Matrix2d rot;
+        head << 0.3 * VehicleBase::length, 0.3 * VehicleBase::length,
+                VehicleBase::width/2, -VehicleBase::width/2;
+        rot << cos(state.yaw), -sin(state.yaw), sin(state.yaw), cos(state.yaw);
+
+        head = rot * head;
+        head += Eigen::Vector2d(state.x, state.y).replicate(1, 2);
+        vehicle_box2d = VehicleBase::get_box2d(state);
+
+        std::vector<std::vector<double>> box2d_vec(2);
+        std::vector<std::vector<double>> head_vec(2);
+        box2d_vec[0].assign(vehicle_box2d.row(0).data(),
+                            vehicle_box2d.row(0).data() + vehicle_box2d.cols());
+        box2d_vec[1].assign(vehicle_box2d.row(1).data(),
+                            vehicle_box2d.row(1).data() + vehicle_box2d.cols());
+        head_vec[0].assign(head.row(0).data(), head.row(0).data() + head.cols());
+        head_vec[1].assign(head.row(1).data(), head.row(1).data() + head.cols());
+
+        if (!fill_mode) {
+            plt::plot(box2d_vec[0], box2d_vec[1], color);
+            plt::plot(head_vec[0], head_vec[1], color);
+        } else {
+            plt::fill(box2d_vec[0], box2d_vec[1], {{"color", color}, {"alpha", "0.5"}});
+        }
     }
 }
 

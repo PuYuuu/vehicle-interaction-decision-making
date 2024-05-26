@@ -23,6 +23,8 @@ private:
     double init_v_min;
     double init_v_max;
     double init_yaw;
+    static int global_vehicle_idx;
+    double* outlook;
 public:
     std::string color;
     Action cur_action;
@@ -37,7 +39,7 @@ public:
 
     void reset(void);
     void excute(void);
-    void draw_vehicle(bool fill_mode = false);
+    void draw_vehicle(std::string draw_style = "realistic", bool fill_mode = false);
     bool operator==(const Vehicle& other) const {
         return name == other.name;
     }

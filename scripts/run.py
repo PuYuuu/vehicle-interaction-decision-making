@@ -31,6 +31,7 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
     env = EnvCrossroads(map_size, lane_width)
     delta_t = config['delta_t']
     max_simulation_time = config['max_simulation_time']
+    vehicle_draw_style = config['vehicle_display_style']
 
     # initialize
     VehicleBase.initialize(env, 5, 2, 8, 2.4)
@@ -92,7 +93,7 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
                 env.draw_env()
                 for vehicle in vehicles:
                     excepted_traj = vehicle.excepted_traj.to_list()
-                    vehicle.draw_vehicle()
+                    vehicle.draw_vehicle(vehicle_draw_style)
                     plt.plot(vehicle.target.x, vehicle.target.y, marker='x', color=vehicle.color)
                     plt.plot(excepted_traj[0], excepted_traj[1], color=vehicle.color, linewidth=1)
                     plt.text(vehicle.vis_text_pos.x, vehicle.vis_text_pos.y + 3, f"level {vehicle.level}", color=vehicle.color)
@@ -112,7 +113,9 @@ def run(rounds_num:int, config_path:str, save_path:str, no_animation:bool, save_
         for vehicle in vehicles:
             for state in vehicle.footprint:
                 vehicle.state = state
-                vehicle.draw_vehicle(True)
+                vehicle.draw_vehicle(vehicle_draw_style, True)
+            plt.text(vehicle.vis_text_pos.x, vehicle.vis_text_pos.y + 3,
+                     f"level {vehicle.level}", color=vehicle.color)
         plt.xlim(-map_size, map_size)
         plt.ylim(-map_size, map_size)
         plt.title(f"Round {iter + 1} / {rounds_num}")
