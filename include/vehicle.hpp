@@ -5,8 +5,9 @@
 #include <set>
 #include <string>
 
-#include <yaml-cpp/yaml.h>
 #include <Eigen/Core>
+#include <yaml-cpp/yaml.h>
+#include <matplotlib-cpp/matplotlibcpp.h>
 
 #include "utils.hpp"
 #include "vehicle_base.hpp"
@@ -24,7 +25,16 @@ private:
     double init_v_max;
     double init_yaw;
     static int global_vehicle_idx;
-    double* outlook;
+    static PyObject* imshow_func;
+
+    struct Outlook {
+        int rows;
+        int cols;
+        int colors;
+        std::vector<float> data;
+    };
+    Outlook outlook;
+    void imshow(const Outlook& out, const State& state, std::vector<double> para);
 public:
     std::string color;
     Action cur_action;

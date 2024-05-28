@@ -231,7 +231,7 @@ namespace utils {
     bool has_overlap(Eigen::MatrixXd box2d_0, Eigen::MatrixXd box2d_1);
     State kinematic_propagate(const State& state, Eigen::Vector2d act, double dt);
     std::string absolute_path(std::string path);
-
+    std::vector<float> imread(std::string filename, int& rows, int& cols, int& colors);
 }
 
 #endif

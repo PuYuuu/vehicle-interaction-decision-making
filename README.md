@@ -49,7 +49,7 @@ python scripts/run.py -r 5 --log_level debug --config ./config/triple_interact.y
 
 For detailed usage help, use `python scripts/run.py -h` to view.
 
-### 🦏Run using C++
+### 🦈Run using C++
 
 Running C++ requires python dependencies, refer to **1.1.1**. By the way, **the C++ implement of this repository is more than 10 times faster🚀 than the Python**. Therefore, strongly recommend you do further development on the basis of C++.
 
@@ -80,28 +80,30 @@ git clone git@github.com:PuYuuu/matplotlib-cpp.git
 sudo cp -r matplotlib-cpp /usr/local/include
 ```
 
-#### 1.2.2 Build it
+#### 1.2.2 Build and run
 
 ```shell
 cd ${path_to_project}
 mkdir build && cd build
-cmake ..
-make -j6
-```
-
-#### 1.2.3 Run it
-
-The executable file can be found in the build folder, run it directly using the default parameters:
-
-```shell
+cmake .. && make -j6
 ./decision_making
 ```
 
-More usage information can be found through `-h` or code.
+More usage information can be found through `./decision_making -h` or code.
 
-### 🛠Configuration file usage
+### 🛠Configure parameters
 
-The configuration file of program running parameters is in `${Project}/config` and strictly uses the yaml file format.
+The configuration file of program running parameters is in `${Project}/config`. The default parameters can be used directly, and you can also change them according to your needs, such as changing the vehicle drawing style:
+
+```yaml
+# vehicle_display_style: "linestyle"
+vehicle_display_style: "realistic"
+```
+<div align=center>
+  <tr>
+    <td><img src="./img/sample-4.gif" width="320"/></a></td>
+  </tr>
+</div>
 
 ## Reference📝
 

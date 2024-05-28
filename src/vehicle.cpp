@@ -2,7 +2,6 @@
 #include <filesystem>
 
 #include <spdlog/spdlog.h>
-#include <matplotlib-cpp/matplotlibcpp.h>
 #include <fmt/core.h>
 
 #include "vehicle.hpp"
@@ -14,16 +13,17 @@ std::filesystem::path vehicle_img_path =
     source_file_path.parent_path().parent_path() / "img" / "vehicle";
 const std::vector<std::pair<std::string, std::string>> vehicle_show_config = {
     // {"#30A9DE", vehicle_img_path / "blue.png"},
-    {"#0000FF", vehicle_img_path / "blue.png"},
-    {"#E53A40", vehicle_img_path / "red.png"},
-    {"#4CAF50", vehicle_img_path / "green.png"},
-    {"#FFFF00", vehicle_img_path / "yellow.png"},
-    {"#00FFFF", vehicle_img_path / "cyan.png"},
-    {"#FA58F4", vehicle_img_path / "purple.png"},
-    {"#000000", vehicle_img_path / "black.png"},
+    {"#0000FF", vehicle_img_path / "blue.mat.txt"},
+    {"#E53A40", vehicle_img_path / "red.mat.txt"},
+    {"#4CAF50", vehicle_img_path / "green.mat.txt"},
+    {"#FFFF00", vehicle_img_path / "yellow.mat.txt"},
+    {"#00FFFF", vehicle_img_path / "cyan.mat.txt"},
+    {"#FA58F4", vehicle_img_path / "purple.mat.txt"},
+    {"#000000", vehicle_img_path / "black.mat.txt"},
 };
 
 int Vehicle::global_vehicle_idx = 0;
+PyObject* Vehicle::imshow_func = nullptr;
 
 Vehicle::Vehicle(
     std::string _name, const YAML::Node& cfg) :
@@ -46,15 +46,56 @@ Vehicle::Vehicle(
     int local_loop_idx = Vehicle::global_vehicle_idx % vehicle_show_config.size();
     color = vehicle_show_config[local_loop_idx].first;
     std::string vehicle_pic_path = vehicle_show_config[local_loop_idx].second;
-    // todo
-    // outlook = plt.imread(vehicle_pic_path, format = "png");
-    ++Vehicle::global_vehicle_idx;
+    outlook.data = utils::imread(vehicle_pic_path, outlook.rows, outlook.cols, outlook.colors);
 
     vehicle_box2d = VehicleBase::get_box2d(state);
     safezone = VehicleBase::get_safezone(state);
     dt = cfg["delta_t"].as<double>();
 
+    if (imshow_func == nullptr && Vehicle::global_vehicle_idx == 0) {
+        Py_Initialize();
+        std::filesystem::path source_file_path(__FILE__);
+        std::filesystem::path project_path = source_file_path.parent_path().parent_path();
+        std::string script_path = project_path / "scripts";
+        PyRun_SimpleString("import sys");
+        PyRun_SimpleString(fmt::format("sys.path.append('{}')", script_path).c_str());
+
+        PyObject* py_name = PyUnicode_DecodeFSDefault("imshow");
+        PyObject* py_module = PyImport_Import(py_name);
+        Py_DECREF(py_name);
+        if (py_module != nullptr) {
+            imshow_func = PyObject_GetAttrString(py_module, "imshow");
+        }
+        if (imshow_func == nullptr || !PyCallable_Check(imshow_func)) {
+            spdlog::error("py.imshow call failed and the vehicle drawing will only support linestyle");
+            imshow_func = nullptr;
+        }
+    }
+    ++Vehicle::global_vehicle_idx;
+
     reset();
+}
+
+void Vehicle::imshow(const Outlook& out, const State& state, std::vector<double> para) {
+    std::vector<double> state_list{state.x, state.y, state.yaw};
+
+    PyObject* vehicle_state = matplotlibcpp::detail::get_array(state_list);
+    PyObject* vehicle_para = matplotlibcpp::detail::get_array(para);
+    npy_intp dims[3] = { out.rows, out.cols, out.colors };
+
+    const float* imptr = &(out.data[0]);
+
+    PyObject* args = PyTuple_New(3);
+    PyTuple_SetItem(args, 0, PyArray_SimpleNewFromData(3, dims, NPY_FLOAT, (void *)imptr));
+    PyTuple_SetItem(args, 1, vehicle_state);
+    PyTuple_SetItem(args, 2, vehicle_para);
+
+    PyObject* ret = PyObject_CallObject(imshow_func, args);
+
+    Py_DECREF(args);
+    if (ret) {
+        Py_DECREF(ret);
+    }
 }
 
 void Vehicle::reset(void) {
@@ -86,9 +127,8 @@ void Vehicle::excute(void) {
 }
 
 void Vehicle::draw_vehicle(std::string draw_style/* = "realistic"*/, bool fill_mode /* = false */) {
-    draw_style = "linestyle";
-    if (draw_style == "realistic") {
-        // todo
+    if (draw_style == "realistic" && imshow_func != nullptr) {
+        imshow(outlook, state, {length, width});
     } else {
         Eigen::Matrix<double, 2, 2, Eigen::RowMajor> head;
         Eigen::Matrix2d rot;
