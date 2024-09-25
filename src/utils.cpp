@@ -193,14 +193,14 @@ namespace utils {
         std::ifstream file(filename);
 
         if (!file.is_open()) {
-            spdlog::error(fmt::format("open {} failed !", filename));
+            spdlog::error("open {} failed !", filename);
             return image;
         }
 
         std::string line;
         getline(file, line);
         if (line != "Convert from PNG") {
-            spdlog::error(fmt::format("this format is not supported: {}", filename));
+            spdlog::error("this format is not supported: {}", filename);
             return image;
         }
         getline(file, line);

@@ -188,7 +188,7 @@ bool VehicleList::is_any_collision(void) {
 
 void VehicleList::push_back(std::shared_ptr<Vehicle> vehicle) {
     if (vehicle_names.count(vehicle->name) > 0) {
-        spdlog::error(fmt::format("vehicle name [{}] duplication is not acceptable !", vehicle->name));
+        spdlog::error("vehicle name [{}] duplication is not acceptable !", vehicle->name);
         std::exit(EXIT_FAILURE);
     } else {
         vehicle_list.push_back(vehicle);

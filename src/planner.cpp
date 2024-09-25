@@ -244,9 +244,9 @@ std::pair<std::vector<Action>, StateList> KLevelPlanner::forward_simulate(
     expected_traj.reverse();
 
     if (expected_traj.size() < steps + 1) {
-        spdlog::debug(fmt::format(
+        spdlog::debug(
             "The max level of the node is not enough({}),using the last value to complete it.",
-            expected_traj.size()));
+            expected_traj.size());
         expected_traj.expand(steps + 1);
     }
 

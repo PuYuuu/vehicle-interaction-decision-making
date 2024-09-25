@@ -36,12 +36,12 @@ std::unordered_map<std::string, spdlog::level::level_enum> LOG_LEVEL_DICT =
 void run(int rounds_num, std::filesystem::path config_path,
     std::filesystem::path save_path, bool show_animation, bool save_fig) {
     YAML::Node config;
-    spdlog::info(fmt::format("config path: {}", config_path.string()));
+    spdlog::info("config path: {}", config_path.string());
     try {
         config = YAML::LoadFile(config_path.string());
-        // spdlog::info(fmt::format("config parameters:\n{}", YAML::Dump(config)));
+        // spdlog::info("config parameters:\n{}", YAML::Dump(config));
     } catch (const YAML::Exception& e) {
-        spdlog::error(fmt::format("Error parsing YAML file: {}", e.what()));
+        spdlog::error("Error parsing YAML file: {}", e.what());
         return ;
     }
 
@@ -78,27 +78,27 @@ void run(int rounds_num, std::filesystem::path config_path,
     for (uint64_t iter = 0; iter < rounds_num; ++iter) {
         vehicles.reset();
 
-        spdlog::info(fmt::format("================== Round {} ==================", iter));
+        spdlog::info("================== Round {} ==================", iter);
         for (auto vehicle : vehicles) {
-            spdlog::info(fmt::format("{} >>> init_x: {:.2f}, init_y: {:.2f}, init_v: {:.2f}",
-                                vehicle->name, vehicle->state.x, vehicle->state.y, vehicle->state.v));
+            spdlog::info("{} >>> init_x: {:.2f}, init_y: {:.2f}, init_v: {:.2f}",
+                        vehicle->name, vehicle->state.x, vehicle->state.y, vehicle->state.v);
         }
 
         double timestamp = 0.0;
         TicToc total_cost_time;
         while (true) {
             if (vehicles.is_all_get_target()) {
-                spdlog::info(fmt::format(
-                        "Round {:d} successed, simulation time: {:.3f} s, actual timecost: {:.3f} s",
-                        iter, timestamp, total_cost_time.toc()));
+                spdlog::info(
+                    "Round {:d} successed, simulation time: {:.3f} s, actual timecost: {:.3f} s",
+                    iter, timestamp, total_cost_time.toc());
                 ++succeed_count;
                 break;
             }
 
             if ( vehicles.is_any_collision() || timestamp > max_simulation_time) {
-                spdlog::info(fmt::format(
-                        "Round {:d} failed, simulation time: {:.3f} s, actual timecost: {:.3f} s",
-                        iter, timestamp, total_cost_time.toc()));
+                spdlog::info(
+                    "Round {:d} failed, simulation time: {:.3f} s, actual timecost: {:.3f} s",
+                    iter, timestamp, total_cost_time.toc());
                 break;
             }
 
@@ -118,8 +118,8 @@ void run(int rounds_num, std::filesystem::path config_path,
             }
 
             vehicles.update_track_objects();
-            spdlog::debug(fmt::format(
-                "simulation time {:.3f} step cost {:.3f} sec", timestamp, iter_cost_time.toc()));  
+            spdlog::debug(
+                "simulation time {:.3f} step cost {:.3f} sec", timestamp, iter_cost_time.toc());  
 
             if (show_animation) {
                 plt::cla();
@@ -186,7 +186,7 @@ void run(int rounds_num, std::filesystem::path config_path,
 
     double succeed_rate = 100 * succeed_count / rounds_num;
     spdlog::info("\n=========================================");
-    spdlog::info(fmt::format("Experiment success {}/{}({:.2f}%) rounds.", succeed_count, rounds_num, succeed_rate));
+    spdlog::info("Experiment success {}/{}({:.2f}%) rounds.", succeed_count, rounds_num, succeed_rate);
 }
 
 int main(int argc, char** argv) {
