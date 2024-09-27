@@ -54,6 +54,7 @@ Vehicle::Vehicle(
 
     if (imshow_func == nullptr && Vehicle::global_vehicle_idx == 0) {
         Py_Initialize();
+        _import_array();
         std::filesystem::path source_file_path(__FILE__);
         std::filesystem::path project_path = source_file_path.parent_path().parent_path();
         std::string script_path = project_path / "scripts";

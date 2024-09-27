@@ -44,6 +44,7 @@ vector<float> imread(std::string filename, int& rows, int& cols, int& colors) {
 
 int main(int argc, char *argv[]) {
     Py_Initialize();
+    _import_array();
 
     std::filesystem::path source_file_path(__FILE__);
     std::filesystem::path project_path = source_file_path.parent_path().parent_path();
