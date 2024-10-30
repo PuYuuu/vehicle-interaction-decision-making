@@ -1,3 +1,11 @@
+/*
+ * @Author: puyu <yuu.pu@foxmail.com>
+ * @Date: 2024-05-17 23:21:15
+ * @LastEditTime: 2024-10-31 01:00:37
+ * @FilePath: /vehicle-interaction-decision-making/include/vehicle_base.hpp
+ * Copyright 2024 puyu, All Rights Reserved.
+ */
+
 #pragma once
 #ifndef __VEHICLE_BASE_HPP
 #define __VEHICLE_BASE_HPP

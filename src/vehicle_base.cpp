@@ -1,3 +1,11 @@
+/*
+ * @Author: puyu <yuu.pu@foxmail.com>
+ * @Date: 2024-05-05 11:59:30
+ * @LastEditTime: 2024-10-31 01:00:03
+ * @FilePath: /vehicle-interaction-decision-making/src/vehicle_base.cpp
+ * Copyright 2024 puyu, All Rights Reserved.
+ */
+
 #include <spdlog/spdlog.h>
 
 #include "vehicle_base.hpp"

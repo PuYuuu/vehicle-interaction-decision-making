@@ -1,3 +1,11 @@
+'''
+Author: puyu <yuu.pu@foxmail.com>
+Date: 2024-05-27 22:23:54
+LastEditTime: 2024-10-31 01:00:59
+FilePath: /vehicle-interaction-decision-making/scripts/imshow.py
+Copyright 2024 puyu, All Rights Reserved.
+'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.transforms import Affine2D

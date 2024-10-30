@@ -1,3 +1,11 @@
+'''
+Author: puyu <yuu.pu@foxmail.com>
+Date: 2024-04-27 16:17:27
+LastEditTime: 2024-10-31 01:01:25
+FilePath: /vehicle-interaction-decision-making/scripts/utils.py
+Copyright 2024 puyu, All Rights Reserved.
+'''
+
 import math
 import random
 import numpy as np

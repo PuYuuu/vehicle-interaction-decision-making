@@ -73,12 +73,6 @@ make -j6
 sudo make install
 ```
 
-3. Install `matplotlib-cpp` for visualization :
-
-```shell
-git clone git@github.com:PuYuuu/matplotlib-cpp.git
-sudo cp -r matplotlib-cpp /usr/local/include
-```
 
 #### 1.2.2 Build and run
 

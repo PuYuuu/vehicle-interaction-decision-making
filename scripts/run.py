@@ -1,3 +1,11 @@
+'''
+Author: puyu <yuu.pu@foxmail.com>
+Date: 2024-05-28 23:07:35
+LastEditTime: 2024-10-31 01:01:18
+FilePath: /vehicle-interaction-decision-making/scripts/run.py
+Copyright 2024 puyu, All Rights Reserved.
+'''
+
 import os
 import time
 import yaml

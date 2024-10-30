@@ -1,3 +1,11 @@
+/*
+ * @Author: puyu <yuu.pu@foxmail.com>
+ * @Date: 2024-05-26 21:14:51
+ * @LastEditTime: 2024-10-31 01:00:29
+ * @FilePath: /vehicle-interaction-decision-making/include/tracked_object.hpp
+ * Copyright 2024 puyu, All Rights Reserved.
+ */
+
 #pragma once
 #ifndef __TRACED_OBJECT_HPP
 #define __TRACED_OBJECT_HPP

@@ -25,6 +25,7 @@ find_package(yaml-cpp REQUIRED)
 
 include_directories("/usr/include/eigen3")
 include_directories(${CMAKE_CURRENT_LIST_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/3rdparty)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 file(GLOB SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/*.cpp")

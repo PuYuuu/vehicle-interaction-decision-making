@@ -1,3 +1,11 @@
+'''
+Author: puyu <yuu.pu@foxmail.com>
+Date: 2024-04-27 16:17:27
+LastEditTime: 2024-10-31 01:01:31
+FilePath: /vehicle-interaction-decision-making/scripts/vehicle_base.py
+Copyright 2024 puyu, All Rights Reserved.
+'''
+
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import Optional

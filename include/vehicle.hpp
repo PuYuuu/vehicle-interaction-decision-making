@@ -1,3 +1,11 @@
+/*
+ * @Author: puyu <yuu.pu@foxmail.com>
+ * @Date: 2024-05-28 01:17:14
+ * @LastEditTime: 2024-10-31 01:00:41
+ * @FilePath: /vehicle-interaction-decision-making/include/vehicle.hpp
+ * Copyright 2024 puyu, All Rights Reserved.
+ */
+
 #pragma once
 #ifndef __VEHICLE_HPP
 #define __VEHICLE_HPP
@@ -7,8 +15,8 @@
 
 #include <Eigen/Core>
 #include <yaml-cpp/yaml.h>
-#include <matplotlib-cpp/matplotlibcpp.h>
 
+#include "matplotlibcpp.h"
 #include "utils.hpp"
 #include "vehicle_base.hpp"
 #include "planner.hpp"

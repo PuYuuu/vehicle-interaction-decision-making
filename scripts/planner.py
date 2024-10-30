@@ -1,3 +1,11 @@
+'''
+Author: puyu <yuu.pu@foxmail.com>
+Date: 2024-05-13 23:24:21
+LastEditTime: 2024-10-31 01:01:03
+FilePath: /vehicle-interaction-decision-making/scripts/planner.py
+Copyright 2024 puyu, All Rights Reserved.
+'''
+
 import math
 import random
 import logging

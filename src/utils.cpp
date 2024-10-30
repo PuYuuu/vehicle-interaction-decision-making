@@ -1,3 +1,11 @@
+/*
+ * @Author: puyu <yuu.pu@foxmail.com>
+ * @Date: 2024-05-26 21:14:51
+ * @LastEditTime: 2024-10-31 00:59:56
+ * @FilePath: /vehicle-interaction-decision-making/src/utils.cpp
+ * Copyright 2024 puyu, All Rights Reserved.
+ */
+
 #include <cmath>
 #include <array>
 #include <fstream>
